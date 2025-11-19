@@ -3,6 +3,8 @@ import { MetricCard } from "@/components/MetricCard";
 import { RiskBadge } from "@/components/RiskBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchMetrics, fetchRiskMetrics, MetricsData, RiskMetric } from "@/lib/rpc";
+import { ExportButton } from "@/components/ExportButton";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   Activity,
   TrendingUp,
@@ -46,9 +48,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Injective Intelligence Dashboard</h1>
-        <p className="text-muted-foreground">Real-time blockchain analytics and risk monitoring</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Injective Intelligence Dashboard</h1>
+          <p className="text-muted-foreground">Real-time blockchain analytics and risk monitoring</p>
+        </div>
+        <ExportButton data={{ metrics, riskMetrics }} filename="dashboard-snapshot" />
       </div>
 
       {/* Key Metrics Grid */}

@@ -4,6 +4,8 @@ import { MetricCard } from "@/components/MetricCard";
 import { fetchOrderbooks, OrderbookData } from "@/lib/rpc";
 import { BookOpen, TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ExportButton } from "@/components/ExportButton";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 
 export default function Orderbook() {
   const [orderbooks, setOrderbooks] = useState<OrderbookData[]>([]);
@@ -32,9 +34,12 @@ export default function Orderbook() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Orderbook & Liquidity</h1>
-        <p className="text-muted-foreground">Real-time market depth and liquidity analysis</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Orderbook & Liquidity</h1>
+          <p className="text-muted-foreground">Real-time market depth and liquidity analysis</p>
+        </div>
+        <ExportButton data={orderbooks} filename="orderbook-data" />
       </div>
 
       {/* Market Selector */}
@@ -176,6 +181,61 @@ export default function Orderbook() {
                     </p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Depth Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Market Depth Visualization</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={[
+                    ...book.bids.reverse().map((b, i) => ({
+                      price: parseFloat(b.price),
+                      bidDepth: book.bids.slice(0, i + 1).reduce((sum, bid) => sum + parseFloat(bid.quantity), 0),
+                      askDepth: null
+                    })),
+                    ...book.asks.map((a, i) => ({
+                      price: parseFloat(a.price),
+                      askDepth: book.asks.slice(0, i + 1).reduce((sum, ask) => sum + parseFloat(ask.quantity), 0),
+                      bidDepth: null
+                    }))
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis 
+                      dataKey="price" 
+                      className="text-xs"
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <YAxis 
+                      className="text-xs"
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Area 
+                      type="stepAfter" 
+                      dataKey="bidDepth" 
+                      stroke="hsl(var(--success))" 
+                      fill="hsl(var(--success) / 0.2)" 
+                      strokeWidth={2}
+                    />
+                    <Area 
+                      type="stepBefore" 
+                      dataKey="askDepth" 
+                      stroke="hsl(var(--destructive))" 
+                      fill="hsl(var(--destructive) / 0.2)" 
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </TabsContent>

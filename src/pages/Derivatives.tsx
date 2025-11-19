@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchDerivatives, DerivativeData } from "@/lib/rpc";
 import { PieChart, TrendingUp, DollarSign, Activity } from "lucide-react";
+import { ExportButton } from "@/components/ExportButton";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   Table,
   TableBody,
@@ -40,9 +42,12 @@ export default function Derivatives() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Derivatives Markets</h1>
-        <p className="text-muted-foreground">Perpetual futures and derivatives analytics</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Derivatives Markets</h1>
+          <p className="text-muted-foreground">Perpetual futures and derivatives analytics</p>
+        </div>
+        <ExportButton data={derivatives} filename="derivatives-data" />
       </div>
 
       {/* Key Metrics */}
@@ -154,25 +159,26 @@ export default function Derivatives() {
         </CardContent>
       </Card>
 
-      {/* Mark vs Oracle Price */}
+      {/* Funding Rate Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Mark Price vs Oracle Price Deviation</CardTitle>
+          <CardTitle>Funding Rate History</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {derivatives.map((deriv, index) => {
-              const deviation = ((parseFloat(deriv.markPrice) - parseFloat(deriv.oraclePrice)) / parseFloat(deriv.oraclePrice)) * 100;
-              const isPositive = deviation > 0;
-              
-              return (
-                <div key={index} className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{deriv.market}</span>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground">
-                      ${parseFloat(deriv.markPrice).toLocaleString()} / ${parseFloat(deriv.oraclePrice).toLocaleString()}
-                    </span>
-                    <span className={`text-sm font-medium ${isPositive ? 'text-success' : 'text-destructive'}`}>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={derivatives.map(d => ({
+              market: d.market,
+              fundingRate: parseFloat(d.fundingRate) * 100
+            }))}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="market" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+              <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `${v.toFixed(3)}%`} />
+              <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+              <Line type="monotone" dataKey="fundingRate" stroke="hsl(var(--primary))" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
                       {isPositive ? '+' : ''}{deviation.toFixed(3)}%
                     </span>
                   </div>
