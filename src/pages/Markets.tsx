@@ -1,0 +1,294 @@
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricCard } from "@/components/MetricCard";
+import { fetchOrderbooks, fetchDerivatives, OrderbookData, DerivativeData } from "@/lib/rpc";
+import { Building2, TrendingUp, PieChart, Activity } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+export default function Markets() {
+  const [spotMarkets, setSpotMarkets] = useState<OrderbookData[]>([]);
+  const [perpMarkets, setPerpMarkets] = useState<DerivativeData[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const [spot, perp] = await Promise.all([
+        fetchOrderbooks(),
+        fetchDerivatives()
+      ]);
+      setSpotMarkets(spot);
+      setPerpMarkets(perp);
+    };
+
+    loadData();
+    const interval = setInterval(loadData, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (spotMarkets.length === 0 || perpMarkets.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-muted-foreground">Loading market data...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold mb-2">Exchange Markets</h1>
+        <p className="text-muted-foreground">Comprehensive market overview and analytics</p>
+      </div>
+
+      {/* Key Metrics */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          title="Spot Markets"
+          value={spotMarkets.length}
+          icon={Building2}
+          change="Active trading pairs"
+          trend="neutral"
+        />
+        <MetricCard
+          title="Perpetual Markets"
+          value={perpMarkets.length}
+          icon={PieChart}
+          change="Futures contracts"
+          trend="neutral"
+        />
+        <MetricCard
+          title="Avg Spread"
+          value="0.12%"
+          icon={Activity}
+          change="Across all markets"
+          trend="up"
+        />
+        <MetricCard
+          title="Market Health"
+          value="98.5%"
+          icon={TrendingUp}
+          change="Uptime & liquidity"
+          trend="up"
+        />
+      </div>
+
+      {/* Markets Tabs */}
+      <Tabs defaultValue="spot">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="spot">Spot Markets</TabsTrigger>
+          <TabsTrigger value="perp">Perpetual Markets</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="spot" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Spot Markets Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Market</TableHead>
+                      <TableHead>Best Bid</TableHead>
+                      <TableHead>Best Ask</TableHead>
+                      <TableHead>Spread</TableHead>
+                      <TableHead>Spread %</TableHead>
+                      <TableHead>Liquidity Score</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {spotMarkets.map((market, index) => {
+                      const spreadPct = (parseFloat(market.spread) / parseFloat(market.bestBid)) * 100;
+                      const liquidityScore = 95 - (spreadPct * 10);
+                      
+                      return (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{market.market}</TableCell>
+                          <TableCell className="text-success">${market.bestBid}</TableCell>
+                          <TableCell className="text-destructive">${market.bestAsk}</TableCell>
+                          <TableCell>${market.spread}</TableCell>
+                          <TableCell>{spreadPct.toFixed(3)}%</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden max-w-[100px]">
+                                <div
+                                  className={`h-full ${
+                                    liquidityScore > 90 ? "bg-success" :
+                                    liquidityScore > 80 ? "bg-warning" :
+                                    "bg-destructive"
+                                  }`}
+                                  style={{ width: `${liquidityScore}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {liquidityScore.toFixed(0)}%
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Spot Trading Metrics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Total Markets</span>
+                  <span className="text-sm font-medium">{spotMarkets.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Avg Bid-Ask Spread</span>
+                  <span className="text-sm font-medium">0.18%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Market Depth (±2%)</span>
+                  <span className="text-sm font-medium">$8.4M</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">24h Volume</span>
+                  <span className="text-sm font-medium">$285M</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Market Quality Indicators</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Liquidity Score</span>
+                  <span className="text-sm font-medium text-success">Excellent</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Price Stability</span>
+                  <span className="text-sm font-medium text-success">Stable</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Execution Quality</span>
+                  <span className="text-sm font-medium text-success">High</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Market Efficiency</span>
+                  <span className="text-sm font-medium">96.2%</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="perp" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Perpetual Markets Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Market</TableHead>
+                      <TableHead>Mark Price</TableHead>
+                      <TableHead>Oracle Price</TableHead>
+                      <TableHead>Funding Rate</TableHead>
+                      <TableHead>Open Interest</TableHead>
+                      <TableHead>Avg Leverage</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {perpMarkets.map((market, index) => {
+                      const fundingRate = parseFloat(market.fundingRate);
+                      
+                      return (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{market.market}</TableCell>
+                          <TableCell>${parseFloat(market.markPrice).toLocaleString()}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            ${parseFloat(market.oraclePrice).toLocaleString()}
+                          </TableCell>
+                          <TableCell className={fundingRate > 0 ? "text-success" : "text-destructive"}>
+                            {(fundingRate * 100).toFixed(4)}%
+                          </TableCell>
+                          <TableCell>
+                            ${(parseFloat(market.openInterest) / 1000000).toFixed(2)}M
+                          </TableCell>
+                          <TableCell>{market.leverage}x</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Derivatives Metrics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Total Open Interest</span>
+                  <span className="text-sm font-medium">$625M</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Avg Funding Rate</span>
+                  <span className="text-sm font-medium">0.0082%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Long/Short Ratio</span>
+                  <span className="text-sm font-medium">1.24</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">24h Volume</span>
+                  <span className="text-sm font-medium">$842M</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Risk Indicators</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Liquidation Risk</span>
+                  <span className="text-sm font-medium text-success">Low</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Oracle Deviation</span>
+                  <span className="text-sm font-medium text-success">0.08%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Funding Volatility</span>
+                  <span className="text-sm font-medium">Normal</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Market Health</span>
+                  <span className="text-sm font-medium text-success">Healthy</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

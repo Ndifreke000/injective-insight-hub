@@ -3,24 +3,64 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import Dashboard from "./pages/Dashboard";
+import Blocks from "./pages/Blocks";
+import Orderbook from "./pages/Orderbook";
+import Trading from "./pages/Trading";
+import Derivatives from "./pages/Derivatives";
+import Risk from "./pages/Risk";
+import CrossChain from "./pages/CrossChain";
+import Heatmap from "./pages/Heatmap";
+import Markets from "./pages/Markets";
+import Compliance from "./pages/Compliance";
+import Governance from "./pages/Governance";
+import Staking from "./pages/Staking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <SidebarProvider>
+            <div className="min-h-screen flex w-full">
+              <AppSidebar />
+              <main className="flex-1 overflow-auto">
+                <header className="sticky top-0 z-10 h-14 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                  <div className="flex items-center h-full px-4">
+                    <SidebarTrigger />
+                  </div>
+                </header>
+                <div className="p-6">
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/blocks" element={<Blocks />} />
+                    <Route path="/orderbook" element={<Orderbook />} />
+                    <Route path="/trading" element={<Trading />} />
+                    <Route path="/derivatives" element={<Derivatives />} />
+                    <Route path="/risk" element={<Risk />} />
+                    <Route path="/cross-chain" element={<CrossChain />} />
+                    <Route path="/heatmap" element={<Heatmap />} />
+                    <Route path="/markets" element={<Markets />} />
+                    <Route path="/compliance" element={<Compliance />} />
+                    <Route path="/governance" element={<Governance />} />
+                    <Route path="/staking" element={<Staking />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </div>
+              </main>
+            </div>
+          </SidebarProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
