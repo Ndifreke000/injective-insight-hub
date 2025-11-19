@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchMetrics, MetricsData } from "@/lib/rpc";
 import { TrendingUp, Users, Activity, DollarSign } from "lucide-react";
+import { ExportButton } from "@/components/ExportButton";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 export default function Trading() {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
@@ -32,9 +34,12 @@ export default function Trading() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Trading Activity</h1>
-        <p className="text-muted-foreground">Real-time trading metrics and market activity</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Trading Activity</h1>
+          <p className="text-muted-foreground">Real-time trading metrics and market activity</p>
+        </div>
+        <ExportButton data={metrics} filename="trading-metrics" />
       </div>
 
       {/* Key Metrics */}
@@ -158,6 +163,44 @@ export default function Trading() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Volume Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>24h Trading Volume Trend</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={Array.from({ length: 24 }, (_, i) => ({
+              hour: `${i.toString().padStart(2, '0')}:00`,
+              spot: Math.random() * 5000000 + 2000000,
+              derivatives: Math.random() * 8000000 + 5000000
+            }))}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis 
+                dataKey="hour" 
+                className="text-xs"
+                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+              />
+              <YAxis 
+                className="text-xs"
+                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`}
+              />
+              <Tooltip 
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+                formatter={(value: any) => `$${(value / 1000000).toFixed(2)}M`}
+              />
+              <Bar dataKey="spot" fill="hsl(var(--primary))" name="Spot Volume" />
+              <Bar dataKey="derivatives" fill="hsl(var(--accent))" name="Derivatives Volume" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
       {/* Trader Activity Heatmap */}
       <Card>

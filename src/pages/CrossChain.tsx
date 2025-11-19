@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchCrossChainFlows, fetchMetrics, CrossChainFlow, MetricsData } from "@/lib/rpc";
 import { ArrowRightLeft, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ExportButton } from "@/components/ExportButton";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import {
   Table,
   TableBody,
@@ -45,9 +47,12 @@ export default function CrossChain() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Cross-Chain Activity</h1>
-        <p className="text-muted-foreground">IBC bridge analytics and inter-chain flows</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Cross-Chain Activity</h1>
+          <p className="text-muted-foreground">IBC bridge analytics and inter-chain flows</p>
+        </div>
+        <ExportButton data={flows} filename="cross-chain-flows" />
       </div>
 
       {/* Key Metrics */}
@@ -133,6 +138,26 @@ export default function CrossChain() {
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Flow Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Net Flow by Chain</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={flows.map(f => ({ ...f, netFlowNum: parseFloat(f.netFlow) }))}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="chain" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+              <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `$${(v / 1000000).toFixed(1)}M`} />
+              <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+              <Bar dataKey="netFlowNum">
+                {flows.map((f, i) => <Cell key={i} fill={parseFloat(f.netFlow) > 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))'} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
 

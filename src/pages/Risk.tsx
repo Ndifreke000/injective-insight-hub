@@ -4,6 +4,8 @@ import { MetricCard } from "@/components/MetricCard";
 import { RiskBadge } from "@/components/RiskBadge";
 import { fetchLiquidations, fetchMetrics, LiquidationEvent, MetricsData } from "@/lib/rpc";
 import { AlertTriangle, Shield, TrendingDown, TrendingUp } from "lucide-react";
+import { ExportButton } from "@/components/ExportButton";
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   Table,
   TableBody,
@@ -49,9 +51,12 @@ export default function Risk() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Risk & Liquidations</h1>
-        <p className="text-muted-foreground">Protocol solvency and liquidation monitoring</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Risk & Liquidations</h1>
+          <p className="text-muted-foreground">Protocol solvency and liquidation monitoring</p>
+        </div>
+        <ExportButton data={{ liquidations, metrics }} filename="risk-data" />
       </div>
 
       {/* Key Metrics */}
