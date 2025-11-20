@@ -1,73 +1,89 @@
-# Welcome to your Lovable project
+# Injective Insight Hub
 
-## Project info
+A comprehensive analytics and intelligence dashboard for the Injective Protocol, built to provide real-time insights into the ecosystem.
 
-**URL**: https://lovable.dev/projects/6b179098-4158-4741-8338-b71c5e282f6c
+## Features
 
-## How can I edit this code?
+-   **Real-Time Dashboard**: Monitor block height, TPS, active validators, and staked INJ.
+-   **Financial Analytics**: Track Open Interest, Insurance Fund, and 24h Trading Volume for Spot and Derivative markets.
+-   **Risk Monitoring**: Visual risk buffer indicators and system risk overview.
+-   **Market Data**: Detailed views for Orderbook, Trading, Derivatives, and Markets.
+-   **Network Insights**: Explore Blocks, Transactions, Cross-Chain activities, and Governance proposals.
+-   **Compliance & Staking**: Dedicated sections for compliance monitoring and staking operations.
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+-   **Frontend**: [React](https://react.dev/) with [TypeScript](https://www.typescriptlang.org/)
+-   **Build Tool**: [Vite](https://vitejs.dev/)
+-   **UI Framework**: [Shadcn UI](https://ui.shadcn.com/)
+-   **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+-   **Icons**: [Lucide React](https://lucide.dev/)
+-   **State Management & Data Fetching**: [TanStack Query](https://tanstack.com/query/latest)
+-   **Blockchain Interaction**: [@injectivelabs/sdk-ts](https://www.npmjs.com/package/@injectivelabs/sdk-ts)
+-   **Charts**: [Recharts](https://recharts.org/)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/6b179098-4158-4741-8338-b71c5e282f6c) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+Ensure you have the following installed:
+-   [Node.js](https://nodejs.org/) (v18 or higher recommended)
+-   npm, yarn, or bun
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1.  Clone the repository:
+    ```bash
+    git clone <repository-url>
+    cd injective-insight-hub
+    ```
 
-Follow these steps:
+2.  Install dependencies:
+    ```bash
+    npm install
+    # or
+    yarn install
+    # or
+    bun install
+    ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Running Locally
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Start the development server:
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:8080` (or the port shown in your terminal).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Building for Production
 
-**Use GitHub Codespaces**
+To create a production build:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+npm run build
+```
 
-## What technologies are used for this project?
+To preview the production build:
 
-This project is built with:
+```bash
+npm run preview
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Project Structure
 
-## How can I deploy this project?
+-   `src/components`: Reusable UI components (including Shadcn UI components).
+-   `src/contexts`: React contexts (e.g., ThemeContext).
+-   `src/hooks`: Custom React hooks.
+-   `src/lib`: Utility functions and RPC client setup.
+-   `src/pages`: Application pages corresponding to routes (Dashboard, Markets, etc.).
+-   `src/App.tsx`: Main application component with routing configuration.
 
-Simply open [Lovable](https://lovable.dev/projects/6b179098-4158-4741-8338-b71c5e282f6c) and click on Share -> Publish.
+## Contributing
 
-## Can I connect a custom domain to my Lovable project?
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Yes, you can!
+## License
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This project is licensed under the MIT License.
