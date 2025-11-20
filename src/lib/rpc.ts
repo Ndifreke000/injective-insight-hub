@@ -11,9 +11,15 @@ import {
 } from "@injectivelabs/sdk-ts";
 import { getNetworkEndpoints, Network } from "@injectivelabs/networks";
 
-const endpoints = getNetworkEndpoints(Network.Mainnet);
+// Use publicnode.com endpoints for better reliability
+const defaultEndpoints = getNetworkEndpoints(Network.Mainnet);
+const endpoints = {
+  ...defaultEndpoints,
+  grpc: "injective-grpc.publicnode.com:443",
+  rest: "https://injective-rpc.publicnode.com:443"
+};
 
-// Initialize API clients
+// Initialize API clients with publicnode endpoints
 const derivativesApi = new IndexerGrpcDerivativesApi(endpoints.indexer);
 const spotApi = new IndexerGrpcSpotApi(endpoints.indexer);
 const transactionApi = new IndexerGrpcTransactionApi(endpoints.indexer);
@@ -23,6 +29,16 @@ const stakingApi = new ChainGrpcStakingApi(endpoints.grpc);
 const bankApi = new ChainGrpcBankApi(endpoints.grpc);
 const insuranceApi = new IndexerGrpcInsuranceFundApi(endpoints.indexer);
 const govApi = new ChainGrpcGovApi(endpoints.grpc);
+
+// Timeout helper to prevent hanging requests
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error("Request timeout")), timeoutMs)
+    )
+  ]);
+}
 
 export interface BlockData {
   height: string;
@@ -129,7 +145,7 @@ export async function fetchLatestBlock(): Promise<BlockData> {
 // Helper function to fetch validator and staking data
 async function fetchValidatorData() {
   try {
-    const response = await stakingApi.fetchValidators();
+    const response = await withTimeout(stakingApi.fetchValidators(), 8000);
     const validators = Array.isArray(response) ? response : (response as any).validators || [];
     const bondedValidators = validators.filter((v: any) => v.status === 3); // 3 = BOND_STATUS_BONDED
     const totalBonded = bondedValidators.reduce((sum: number, v: any) =>
@@ -174,7 +190,7 @@ async function calculateTPS(): Promise<number> {
 // Helper function to fetch insurance fund data
 async function fetchInsuranceFundData(): Promise<string> {
   try {
-    const funds = await insuranceApi.fetchInsuranceFunds();
+    const funds = await withTimeout(insuranceApi.fetchInsuranceFunds(), 8000);
     const fundsArray = Array.isArray(funds) ? funds : [];
     const total = fundsArray.reduce((sum: number, f: any) =>
       sum + parseFloat(f.balance || "0") / 1e18, 0); // Convert from base units
