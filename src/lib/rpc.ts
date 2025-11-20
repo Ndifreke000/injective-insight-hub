@@ -259,12 +259,12 @@ export async function fetchMetrics(): Promise<MetricsData> {
 
 export async function fetchOrderbooks(): Promise<OrderbookData[]> {
   try {
-    const markets = await derivativesApi.fetchMarkets();
+    const markets = await withTimeout(derivativesApi.fetchMarkets(), 6000);
     const marketsArray = Array.isArray(markets) ? markets : [];
 
     const orderbookPromises = marketsArray.slice(0, 4).map(async (market: any) => {
       try {
-        const orderbook: any = await derivativesApi.fetchOrderbook(market.marketId);
+        const orderbook: any = await withTimeout(derivativesApi.fetchOrderbook(market.marketId), 5000);
 
         const bids = (orderbook?.buys || []).slice(0, 10).map((b: any) => ({
           price: b.price || "0",
@@ -303,7 +303,7 @@ export async function fetchOrderbooks(): Promise<OrderbookData[]> {
 
 export async function fetchDerivatives(): Promise<DerivativeData[]> {
   try {
-    const markets = await derivativesApi.fetchMarkets();
+    const markets = await withTimeout(derivativesApi.fetchMarkets(), 6000);
     const marketsArray = Array.isArray(markets) ? markets : [];
 
     return marketsArray.slice(0, 4).map((market: any) => ({
