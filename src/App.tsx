@@ -18,6 +18,7 @@ import Markets from "./pages/Markets";
 import Compliance from "./pages/Compliance";
 import Governance from "./pages/Governance";
 import Staking from "./pages/Staking";
+import Transactions from "./pages/Transactions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,7 +34,7 @@ const App = () => (
             <div className="min-h-screen flex w-full">
               <AppSidebar />
               <main className="flex-1 overflow-auto">
-                <header className="sticky top-0 z-10 h-14 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <header className="sticky top-0 z-10 h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                   <div className="flex items-center h-full px-4">
                     <SidebarTrigger />
                   </div>
@@ -52,6 +53,7 @@ const App = () => (
                     <Route path="/compliance" element={<Compliance />} />
                     <Route path="/governance" element={<Governance />} />
                     <Route path="/staking" element={<Staking />} />
+                    <Route path="/transactions" element={<Transactions />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>

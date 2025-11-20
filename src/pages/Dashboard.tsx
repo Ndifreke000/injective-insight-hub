@@ -10,7 +10,6 @@ import {
   TrendingUp,
   Users,
   Zap,
-  Clock,
   Coins,
   PieChart,
   Shield,
@@ -202,35 +201,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Live RPC Stream Indicator */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
-            Live RPC Stream Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <div className="text-sm text-muted-foreground">RPC Endpoint</div>
-              <div className="text-sm font-mono mt-1">sentry.tm.injective.network:443</div>
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground">Last Updated</div>
-              <div className="text-sm font-medium mt-1 flex items-center gap-2">
-                <Clock className="h-3 w-3" />
-                {new Date().toLocaleTimeString()}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground">Data Freshness</div>
-              <div className="text-sm font-medium mt-1 text-success">Real-time</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
