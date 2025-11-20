@@ -12,7 +12,8 @@ import {
   Vote,
   Coins,
   Moon,
-  Sun
+  Sun,
+  Receipt
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -33,6 +34,7 @@ import { Button } from "@/components/ui/button";
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Blocks & Transactions", url: "/blocks", icon: Box },
+  { title: "Transaction Monitoring", url: "/transactions", icon: Receipt },
   { title: "Orderbook & Liquidity", url: "/orderbook", icon: BookOpen },
   { title: "Trading Activity", url: "/trading", icon: TrendingUp },
   { title: "Derivatives", url: "/derivatives", icon: PieChart },
@@ -52,31 +54,30 @@ export function AppSidebar() {
 
   return (
     <Sidebar className={isCollapsed ? "w-16" : "w-64"} collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center justify-between">
-          {!isCollapsed && (
+      <SidebarHeader className="border-b border-sidebar-border h-16 flex items-center p-4">
+        {!isCollapsed ? (
+          <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
               <img src="/injective-logo.png" alt="Injective" className="h-6 w-6 rounded" />
               <h2 className="text-lg font-bold text-sidebar-primary">Injective Intel</h2>
             </div>
-          )}
-          {isCollapsed && (
-            <img src="/injective-logo.png" alt="Injective" className="h-6 w-6 rounded mx-auto" />
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="h-8 w-8"
-            title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-          >
-            {theme === "light" ? (
-              <Moon className="h-4 w-4" />
-            ) : (
-              <Sun className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="h-8 w-8"
+              title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+            >
+              {theme === "light" ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        ) : (
+          <img src="/injective-logo.png" alt="Injective" className="h-6 w-6 rounded mx-auto" />
+        )}
       </SidebarHeader>
 
       <SidebarContent>
