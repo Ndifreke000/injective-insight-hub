@@ -519,10 +519,9 @@ export async function fetchRiskMetrics(): Promise<RiskMetric[]> {
 
 export async function fetchGovernanceProposals(): Promise<GovernanceProposal[]> {
   try {
-    const response = await fetch(`${endpoints.rest}/cosmos/gov/v1beta1/proposals`);
-    const data = await response.json();
+    const proposals: any = await withTimeout(govApi.fetchProposals(), 6000);
 
-    return data.proposals?.slice(0, 5).map((p: any) => ({
+    return proposals?.slice(0, 5).map((p: any) => ({
       id: p.proposal_id || "0",
       title: p.content?.title || `Proposal ${p.proposal_id}`,
       status: p.status === "PROPOSAL_STATUS_VOTING_PERIOD" ? "active" :
