@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchOrderbooks, fetchDerivatives, OrderbookData, DerivativeData } from "@/lib/rpc";
 import { Building2, TrendingUp, PieChart, Activity } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ExportButton } from "@/components/ExportButton";
+import { DataFilters } from "@/components/DataFilters";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   Table,
   TableBody,
@@ -16,6 +19,7 @@ import {
 export default function Markets() {
   const [spotMarkets, setSpotMarkets] = useState<OrderbookData[]>([]);
   const [perpMarkets, setPerpMarkets] = useState<DerivativeData[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -32,6 +36,18 @@ export default function Markets() {
     return () => clearInterval(interval);
   }, []);
 
+  const filteredSpotMarkets = useMemo(() => {
+    return spotMarkets.filter(m => 
+      m.market.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [spotMarkets, searchQuery]);
+
+  const filteredPerpMarkets = useMemo(() => {
+    return perpMarkets.filter(m => 
+      m.market.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [perpMarkets, searchQuery]);
+
   if (spotMarkets.length === 0 || perpMarkets.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -42,9 +58,12 @@ export default function Markets() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Exchange Markets</h1>
-        <p className="text-muted-foreground">Comprehensive market overview and analytics</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Exchange Markets</h1>
+          <p className="text-muted-foreground">Comprehensive market overview and analytics</p>
+        </div>
+        <ExportButton data={{ spot: filteredSpotMarkets, perp: filteredPerpMarkets }} filename="markets-data" />
       </div>
 
       {/* Key Metrics */}
@@ -87,6 +106,12 @@ export default function Markets() {
         </TabsList>
 
         <TabsContent value="spot" className="space-y-6">
+          <DataFilters
+            searchPlaceholder="Search spot markets..."
+            onSearchChange={setSearchQuery}
+            showDateRange={false}
+          />
+          
           <Card>
             <CardHeader>
               <CardTitle>Spot Markets Overview</CardTitle>
@@ -105,7 +130,7 @@ export default function Markets() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {spotMarkets.map((market, index) => {
+                    {filteredSpotMarkets.map((market, index) => {
                       const spreadPct = (parseFloat(market.spread) / parseFloat(market.bestBid)) * 100;
                       const liquidityScore = 95 - (spreadPct * 10);
                       
@@ -139,6 +164,43 @@ export default function Markets() {
                   </TableBody>
                 </Table>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Spread Distribution Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Spread Distribution Across Spot Markets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={filteredSpotMarkets.map(m => ({
+                  market: m.market,
+                  spread: parseFloat(m.spread),
+                  spreadPct: (parseFloat(m.spread) / parseFloat(m.bestBid)) * 100
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis 
+                    dataKey="market" 
+                    className="text-xs"
+                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <YAxis 
+                    className="text-xs"
+                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    tickFormatter={(value) => `${value.toFixed(2)}%`}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value: any) => `${value.toFixed(3)}%`}
+                  />
+                  <Bar dataKey="spreadPct" fill="hsl(var(--primary))" name="Spread %" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
 
@@ -194,6 +256,12 @@ export default function Markets() {
         </TabsContent>
 
         <TabsContent value="perp" className="space-y-6">
+          <DataFilters
+            searchPlaceholder="Search perpetual markets..."
+            onSearchChange={setSearchQuery}
+            showDateRange={false}
+          />
+          
           <Card>
             <CardHeader>
               <CardTitle>Perpetual Markets Overview</CardTitle>
@@ -212,7 +280,7 @@ export default function Markets() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {perpMarkets.map((market, index) => {
+                    {filteredPerpMarkets.map((market, index) => {
                       const fundingRate = parseFloat(market.fundingRate);
                       
                       return (
@@ -235,6 +303,45 @@ export default function Markets() {
                   </TableBody>
                 </Table>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Open Interest Distribution Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Open Interest Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={filteredPerpMarkets.map(m => ({
+                  market: m.market,
+                  openInterest: parseFloat(m.openInterest) / 1000000,
+                  fundingRate: parseFloat(m.fundingRate) * 100
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis 
+                    dataKey="market" 
+                    className="text-xs"
+                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <YAxis 
+                    className="text-xs"
+                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    tickFormatter={(value) => `$${value.toFixed(1)}M`}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value: any, name: string) => 
+                      name === 'openInterest' ? `$${value.toFixed(2)}M` : `${value.toFixed(4)}%`
+                    }
+                  />
+                  <Bar dataKey="openInterest" fill="hsl(var(--primary))" name="Open Interest (M)" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
 

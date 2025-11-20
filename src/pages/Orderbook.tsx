@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchOrderbooks, OrderbookData } from "@/lib/rpc";
@@ -6,9 +6,11 @@ import { BookOpen, TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExportButton } from "@/components/ExportButton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
+import { DataFilters } from "@/components/DataFilters";
 
 export default function Orderbook() {
   const [orderbooks, setOrderbooks] = useState<OrderbookData[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedMarket, setSelectedMarket] = useState(0);
 
   useEffect(() => {
@@ -22,6 +24,34 @@ export default function Orderbook() {
     return () => clearInterval(interval);
   }, []);
 
+  const filteredOrderbooks = useMemo(() => {
+    return orderbooks.filter(ob => 
+      ob.market.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [orderbooks, searchQuery]);
+
+  if (filteredOrderbooks.length === 0 && orderbooks.length > 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Orderbook & Liquidity</h1>
+            <p className="text-muted-foreground">Real-time market depth and liquidity analysis</p>
+          </div>
+          <ExportButton data={orderbooks} filename="orderbook-data" />
+        </div>
+        <DataFilters
+          searchPlaceholder="Search markets..."
+          onSearchChange={setSearchQuery}
+          showDateRange={false}
+        />
+        <div className="flex items-center justify-center h-64">
+          <div className="text-muted-foreground">No markets match your search.</div>
+        </div>
+      </div>
+    );
+  }
+
   if (orderbooks.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -30,7 +60,7 @@ export default function Orderbook() {
     );
   }
 
-  const currentBook = orderbooks[selectedMarket];
+  const currentBook = filteredOrderbooks[selectedMarket] || filteredOrderbooks[0];
 
   return (
     <div className="space-y-6">
@@ -39,20 +69,26 @@ export default function Orderbook() {
           <h1 className="text-3xl font-bold mb-2">Orderbook & Liquidity</h1>
           <p className="text-muted-foreground">Real-time market depth and liquidity analysis</p>
         </div>
-        <ExportButton data={orderbooks} filename="orderbook-data" />
+        <ExportButton data={filteredOrderbooks} filename="orderbook-data" />
       </div>
+
+      <DataFilters
+        searchPlaceholder="Search markets..."
+        onSearchChange={setSearchQuery}
+        showDateRange={false}
+      />
 
       {/* Market Selector */}
       <Tabs defaultValue="0" onValueChange={(v) => setSelectedMarket(parseInt(v))}>
         <TabsList className="grid w-full grid-cols-4">
-          {orderbooks.map((book, index) => (
+          {filteredOrderbooks.slice(0, 4).map((book, index) => (
             <TabsTrigger key={index} value={String(index)}>
               {book.market}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        {orderbooks.map((book, index) => (
+        {filteredOrderbooks.map((book, index) => (
           <TabsContent key={index} value={String(index)} className="space-y-6">
             {/* Key Metrics */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

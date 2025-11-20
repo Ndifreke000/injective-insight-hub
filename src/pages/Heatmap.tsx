@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RiskBadge } from "@/components/RiskBadge";
 import { fetchRiskMetrics, RiskMetric } from "@/lib/rpc";
 import { Activity, AlertTriangle } from "lucide-react";
+import { DataFilters } from "@/components/DataFilters";
+import { ExportButton } from "@/components/ExportButton";
 
 export default function Heatmap() {
   const [riskMetrics, setRiskMetrics] = useState<RiskMetric[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -18,6 +21,13 @@ export default function Heatmap() {
     return () => clearInterval(interval);
   }, []);
 
+  const filteredMetrics = useMemo(() => {
+    return riskMetrics.filter(m => 
+      m.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [riskMetrics, searchQuery]);
+
   if (riskMetrics.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -26,16 +36,25 @@ export default function Heatmap() {
     );
   }
 
-  const avgScore = riskMetrics.reduce((sum, m) => sum + m.score, 0) / riskMetrics.length;
-  const criticalRisks = riskMetrics.filter(m => m.level === "high").length;
+  const avgScore = filteredMetrics.reduce((sum, m) => sum + m.score, 0) / filteredMetrics.length;
+  const criticalRisks = filteredMetrics.filter(m => m.level === "high").length;
   const overallRisk = avgScore > 70 ? "low" : avgScore > 40 ? "medium" : "high";
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Market Risk Heatmap</h1>
-        <p className="text-muted-foreground">Systemic risk aggregation and monitoring</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Market Risk Heatmap</h1>
+          <p className="text-muted-foreground">Systemic risk aggregation and monitoring</p>
+        </div>
+        <ExportButton data={filteredMetrics} filename="risk-heatmap" />
       </div>
+
+      <DataFilters
+        searchPlaceholder="Search risk categories..."
+        onSearchChange={setSearchQuery}
+        showDateRange={false}
+      />
 
       {/* Overall Risk Status */}
       <Card>
@@ -73,7 +92,7 @@ export default function Heatmap() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {riskMetrics.map((metric, index) => (
+            {filteredMetrics.map((metric, index) => (
               <Card key={index} className="border-2" style={{
                 borderColor: metric.level === "high" ? "hsl(var(--destructive))" :
                              metric.level === "medium" ? "hsl(var(--warning))" :

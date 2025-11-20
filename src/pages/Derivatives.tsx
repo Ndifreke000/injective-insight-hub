@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchDerivatives, DerivativeData } from "@/lib/rpc";
 import { PieChart, TrendingUp, DollarSign, Activity } from "lucide-react";
 import { ExportButton } from "@/components/ExportButton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { DataFilters } from "@/components/DataFilters";
 import {
   Table,
   TableBody,
@@ -16,6 +17,7 @@ import {
 
 export default function Derivatives() {
   const [derivatives, setDerivatives] = useState<DerivativeData[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -36,9 +38,19 @@ export default function Derivatives() {
     );
   }
 
-  const totalOI = derivatives.reduce((sum, d) => sum + parseFloat(d.openInterest), 0);
-  const avgFunding = derivatives.reduce((sum, d) => sum + parseFloat(d.fundingRate), 0) / derivatives.length;
-  const avgLeverage = derivatives.reduce((sum, d) => sum + parseFloat(d.leverage), 0) / derivatives.length;
+  const filteredDerivatives = useMemo(() => {
+    return derivatives.filter(d => 
+      d.market.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [derivatives, searchQuery]);
+
+  const totalOI = filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.openInterest), 0);
+  const avgFunding = filteredDerivatives.length > 0 
+    ? filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.fundingRate), 0) / filteredDerivatives.length 
+    : 0;
+  const avgLeverage = filteredDerivatives.length > 0 
+    ? filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.leverage), 0) / filteredDerivatives.length 
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -68,7 +80,7 @@ export default function Derivatives() {
         />
         <MetricCard
           title="Active Markets"
-          value={derivatives.length}
+          value={filteredDerivatives.length}
           icon={PieChart}
           change="Perpetual futures"
           trend="neutral"
@@ -88,6 +100,11 @@ export default function Derivatives() {
           <CardTitle>Perpetual Markets Overview</CardTitle>
         </CardHeader>
         <CardContent>
+          <DataFilters
+            searchPlaceholder="Search markets..."
+            onSearchChange={setSearchQuery}
+            showDateRange={false}
+          />
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -101,7 +118,7 @@ export default function Derivatives() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {derivatives.map((deriv, index) => {
+                {filteredDerivatives.map((deriv, index) => {
                   const fundingRate = parseFloat(deriv.fundingRate);
                   const priceDiff = ((parseFloat(deriv.markPrice) - parseFloat(deriv.oraclePrice)) / parseFloat(deriv.oraclePrice)) * 100;
                   
@@ -133,7 +150,7 @@ export default function Derivatives() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {derivatives.map((deriv, index) => {
+            {filteredDerivatives.map((deriv, index) => {
               const percentage = (parseFloat(deriv.openInterest) / totalOI) * 100;
               return (
                 <div key={index}>
@@ -166,7 +183,7 @@ export default function Derivatives() {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={derivatives.map(d => ({
+            <LineChart data={filteredDerivatives.map(d => ({
               market: d.market,
               fundingRate: parseFloat(d.fundingRate) * 100
             }))}>
@@ -177,20 +194,6 @@ export default function Derivatives() {
               <Line type="monotone" dataKey="fundingRate" stroke="hsl(var(--primary))" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
-                      {isPositive ? '+' : ''}{deviation.toFixed(3)}%
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-            <div className="pt-4 border-t">
-              <p className="text-xs text-muted-foreground">
-                Low deviation indicates healthy price discovery and oracle reliability
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

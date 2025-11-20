@@ -55,7 +55,13 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <h2 className="text-lg font-bold text-sidebar-primary">Injective Intel</h2>
+            <div className="flex items-center gap-2">
+              <img src="/injective-logo.png" alt="Injective" className="h-6 w-6 rounded" />
+              <h2 className="text-lg font-bold text-sidebar-primary">Injective Intel</h2>
+            </div>
+          )}
+          {isCollapsed && (
+            <img src="/injective-logo.png" alt="Injective" className="h-6 w-6 rounded mx-auto" />
           )}
           <Button
             variant="ghost"
