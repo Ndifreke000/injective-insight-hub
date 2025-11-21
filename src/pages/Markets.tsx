@@ -25,15 +25,13 @@ export default function Markets() {
     const loadData = async () => {
       const [spot, perp] = await Promise.all([
         fetchOrderbooks(),
-        fetchDerivatives()
+        fetchDerivatives(),
       ]);
       setSpotMarkets(spot);
       setPerpMarkets(perp);
     };
 
     loadData();
-    const interval = setInterval(loadData, 8000);
-    return () => clearInterval(interval);
   }, []);
 
   const filteredSpotMarkets = useMemo(() => {

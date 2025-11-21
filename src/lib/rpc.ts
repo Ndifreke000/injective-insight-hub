@@ -220,21 +220,20 @@ export async function fetchMetrics(): Promise<MetricsData> {
     const derivMarkets = Array.isArray(derivativeMarkets) ? derivativeMarkets : (derivativeMarkets as any).markets || [];
     const spotMarketsArr = Array.isArray(spotMarkets) ? spotMarkets : (spotMarkets as any).markets || [];
 
-    // Calculate total open interest (convert from base units)
+    // Calculate total open interest and 24h volumes (values are already in human-readable units)
     const totalOI = derivMarkets.reduce((sum: number, m: any) => {
-      const oi = parseFloat(m.perpetualMarketInfo?.quantityTick || m.quote?.openInterest || "0");
-      return sum + (oi / 1e18); // Convert from base units to human readable
+      const oi = parseFloat(m.perpetualMarketInfo?.openInterest || m.quote?.openInterest || "0");
+      return sum + oi;
     }, 0);
 
-    // Calculate 24h volumes (convert from base units)
     const spotVolume = spotMarketsArr.reduce((sum: number, m: any) => {
-      const vol = parseFloat(m.volume || m.quote?.volume || "0");
-      return sum + (vol / 1e18);
+      const vol = parseFloat(m.quote?.volume || m.volume || "0");
+      return sum + vol;
     }, 0);
 
     const derivVolume = derivMarkets.reduce((sum: number, m: any) => {
-      const vol = parseFloat(m.volume || m.quote?.volume || "0");
-      return sum + (vol / 1e18);
+      const vol = parseFloat(m.quote?.volume || m.volume || "0");
+      return sum + vol;
     }, 0);
 
     // Calculate total transactions from block history

@@ -24,15 +24,13 @@ export default function Dashboard() {
     const loadData = async () => {
       const [metricsData, riskData] = await Promise.all([
         fetchMetrics(),
-        fetchRiskMetrics()
+        fetchRiskMetrics(),
       ]);
       setMetrics(metricsData);
       setRiskMetrics(riskData);
     };
 
     loadData();
-    const interval = setInterval(loadData, 10000);
-    return () => clearInterval(interval);
   }, []);
 
   if (!metrics) {

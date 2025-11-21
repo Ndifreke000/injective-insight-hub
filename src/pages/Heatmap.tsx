@@ -17,8 +17,6 @@ export default function Heatmap() {
     };
 
     loadData();
-    const interval = setInterval(loadData, 15000);
-    return () => clearInterval(interval);
   }, []);
 
   const filteredMetrics = useMemo(() => {

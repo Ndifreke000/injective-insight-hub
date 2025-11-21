@@ -22,15 +22,13 @@ export default function CrossChain() {
     const loadData = async () => {
       const [flowsData, metricsData] = await Promise.all([
         fetchCrossChainFlows(),
-        fetchMetrics()
+        fetchMetrics(),
       ]);
       setFlows(flowsData);
       setMetrics(metricsData);
     };
 
     loadData();
-    const interval = setInterval(loadData, 10000);
-    return () => clearInterval(interval);
   }, []);
 
   if (!metrics || flows.length === 0) {
