@@ -5,6 +5,7 @@ import { fetchRiskMetrics, RiskMetric } from "@/lib/rpc";
 import { Activity, AlertTriangle } from "lucide-react";
 import { DataFilters } from "@/components/DataFilters";
 import { ExportButton } from "@/components/ExportButton";
+import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
 
 export default function Heatmap() {
   const [riskMetrics, setRiskMetrics] = useState<RiskMetric[]>([]);
@@ -20,18 +21,14 @@ export default function Heatmap() {
   }, []);
 
   const filteredMetrics = useMemo(() => {
-    return riskMetrics.filter(m => 
+    return riskMetrics.filter(m =>
       m.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [riskMetrics, searchQuery]);
 
   if (riskMetrics.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading risk heatmap...</div>
-      </div>
-    );
+    return <PageLoadingSkeleton />;
   }
 
   const avgScore = filteredMetrics.reduce((sum, m) => sum + m.score, 0) / filteredMetrics.length;
@@ -93,8 +90,8 @@ export default function Heatmap() {
             {filteredMetrics.map((metric, index) => (
               <Card key={index} className="border-2" style={{
                 borderColor: metric.level === "high" ? "hsl(var(--destructive))" :
-                             metric.level === "medium" ? "hsl(var(--warning))" :
-                             "hsl(var(--success))"
+                  metric.level === "medium" ? "hsl(var(--warning))" :
+                    "hsl(var(--success))"
               }}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -111,11 +108,10 @@ export default function Heatmap() {
                       </div>
                       <div className="h-2 bg-secondary rounded-full overflow-hidden">
                         <div
-                          className={`h-full transition-all ${
-                            metric.level === "high" ? "bg-destructive" :
-                            metric.level === "medium" ? "bg-warning" :
-                            "bg-success"
-                          }`}
+                          className={`h-full transition-all ${metric.level === "high" ? "bg-destructive" :
+                              metric.level === "medium" ? "bg-warning" :
+                                "bg-success"
+                            }`}
                           style={{ width: `${metric.score}%` }}
                         />
                       </div>
@@ -144,8 +140,8 @@ export default function Heatmap() {
                       className="w-4 h-4 rounded"
                       style={{
                         backgroundColor: metric.level === "high" ? "hsl(var(--destructive))" :
-                                       metric.level === "medium" ? "hsl(var(--warning))" :
-                                       "hsl(var(--success))"
+                          metric.level === "medium" ? "hsl(var(--warning))" :
+                            "hsl(var(--success))"
                       }}
                     />
                     <span className="text-sm font-medium">{metric.category}</span>

@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExportButton } from "@/components/ExportButton";
 import { DataFilters } from "@/components/DataFilters";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
 import {
   Table,
   TableBody,
@@ -35,23 +36,19 @@ export default function Markets() {
   }, []);
 
   const filteredSpotMarkets = useMemo(() => {
-    return spotMarkets.filter(m => 
+    return spotMarkets.filter(m =>
       m.market.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [spotMarkets, searchQuery]);
 
   const filteredPerpMarkets = useMemo(() => {
-    return perpMarkets.filter(m => 
+    return perpMarkets.filter(m =>
       m.market.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [perpMarkets, searchQuery]);
 
   if (spotMarkets.length === 0 || perpMarkets.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading market data...</div>
-      </div>
-    );
+    return <PageLoadingSkeleton />;
   }
 
   return (
@@ -109,7 +106,7 @@ export default function Markets() {
             onSearchChange={setSearchQuery}
             showDateRange={false}
           />
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Spot Markets Overview</CardTitle>
@@ -131,7 +128,7 @@ export default function Markets() {
                     {filteredSpotMarkets.map((market, index) => {
                       const spreadPct = (parseFloat(market.spread) / parseFloat(market.bestBid)) * 100;
                       const liquidityScore = 95 - (spreadPct * 10);
-                      
+
                       return (
                         <TableRow key={index}>
                           <TableCell className="font-medium">{market.market}</TableCell>
@@ -143,11 +140,10 @@ export default function Markets() {
                             <div className="flex items-center gap-2">
                               <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden max-w-[100px]">
                                 <div
-                                  className={`h-full ${
-                                    liquidityScore > 90 ? "bg-success" :
-                                    liquidityScore > 80 ? "bg-warning" :
-                                    "bg-destructive"
-                                  }`}
+                                  className={`h-full ${liquidityScore > 90 ? "bg-success" :
+                                      liquidityScore > 80 ? "bg-warning" :
+                                        "bg-destructive"
+                                    }`}
                                   style={{ width: `${liquidityScore}%` }}
                                 />
                               </div>
@@ -178,17 +174,17 @@ export default function Markets() {
                   spreadPct: (parseFloat(m.spread) / parseFloat(m.bestBid)) * 100
                 }))}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis 
-                    dataKey="market" 
+                  <XAxis
+                    dataKey="market"
                     className="text-xs"
                     tick={{ fill: 'hsl(var(--muted-foreground))' }}
                   />
-                  <YAxis 
+                  <YAxis
                     className="text-xs"
                     tick={{ fill: 'hsl(var(--muted-foreground))' }}
                     tickFormatter={(value) => `${value.toFixed(2)}%`}
                   />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
@@ -259,7 +255,7 @@ export default function Markets() {
             onSearchChange={setSearchQuery}
             showDateRange={false}
           />
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Perpetual Markets Overview</CardTitle>
@@ -280,7 +276,7 @@ export default function Markets() {
                   <TableBody>
                     {filteredPerpMarkets.map((market, index) => {
                       const fundingRate = parseFloat(market.fundingRate);
-                      
+
                       return (
                         <TableRow key={index}>
                           <TableCell className="font-medium">{market.market}</TableCell>
@@ -317,23 +313,23 @@ export default function Markets() {
                   fundingRate: parseFloat(m.fundingRate) * 100
                 }))}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis 
-                    dataKey="market" 
+                  <XAxis
+                    dataKey="market"
                     className="text-xs"
                     tick={{ fill: 'hsl(var(--muted-foreground))' }}
                   />
-                  <YAxis 
+                  <YAxis
                     className="text-xs"
                     tick={{ fill: 'hsl(var(--muted-foreground))' }}
                     tickFormatter={(value) => `$${value.toFixed(1)}M`}
                   />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px'
                     }}
-                    formatter={(value: any, name: string) => 
+                    formatter={(value: any, name: string) =>
                       name === 'openInterest' ? `$${value.toFixed(2)}M` : `${value.toFixed(4)}%`
                     }
                   />

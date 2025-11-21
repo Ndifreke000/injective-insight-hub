@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchLatestBlock, fetchMetrics, BlockData, MetricsData } from "@/lib/rpc";
 import { Box, Clock, Zap, Activity, Hash } from "lucide-react";
+import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
 import {
   Table,
   TableBody,
@@ -56,11 +57,7 @@ export default function Blocks() {
   }, []);
 
   if (!latestBlock || !metrics) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading block data...</div>
-      </div>
-    );
+    return <PageLoadingSkeleton />;
   }
 
   return (
