@@ -35,37 +35,26 @@ export default function Transactions() {
   });
 
   useEffect(() => {
-    // Mock transaction data - replace with real RPC data
+    // TODO: Replace with real RPC-backed transaction monitoring
     const mockTransactions: Transaction[] = Array.from({ length: 20 }, (_, i) => ({
-      hash: `0x${Math.random().toString(16).slice(2, 18)}...${Math.random().toString(16).slice(2, 6)}`,
-      type: ["Transfer", "Swap", "Stake", "Unstake", "Vote"][Math.floor(Math.random() * 5)],
+      hash: `0x${Math.random().toString(16).slice(2, 18)}...${Math.random()
+        .toString(16)
+        .slice(2, 6)}`,
+      type: ["Transfer", "Swap", "Stake", "Unstake", "Vote"][
+        Math.floor(Math.random() * 5)
+      ],
       from: `inj1${Math.random().toString(36).slice(2, 12)}`,
       to: `inj1${Math.random().toString(36).slice(2, 12)}`,
       amount: (Math.random() * 10000).toFixed(2),
       token: ["INJ", "USDT", "ATOM", "ETH"][Math.floor(Math.random() * 4)],
       timestamp: new Date(Date.now() - Math.random() * 3600000),
-      status: ["success", "success", "success", "pending", "failed"][Math.floor(Math.random() * 5)] as "success" | "pending" | "failed",
+      status: ["success", "success", "success", "pending", "failed"][
+        Math.floor(Math.random() * 5)
+      ] as "success" | "pending" | "failed",
       gasUsed: (Math.random() * 100000).toFixed(0),
     }));
 
     setTransactions(mockTransactions);
-
-    const interval = setInterval(() => {
-      const newTx: Transaction = {
-        hash: `0x${Math.random().toString(16).slice(2, 18)}...${Math.random().toString(16).slice(2, 6)}`,
-        type: ["Transfer", "Swap", "Stake", "Unstake", "Vote"][Math.floor(Math.random() * 5)],
-        from: `inj1${Math.random().toString(36).slice(2, 12)}`,
-        to: `inj1${Math.random().toString(36).slice(2, 12)}`,
-        amount: (Math.random() * 10000).toFixed(2),
-        token: ["INJ", "USDT", "ATOM", "ETH"][Math.floor(Math.random() * 4)],
-        timestamp: new Date(),
-        status: "success",
-        gasUsed: (Math.random() * 100000).toFixed(0),
-      };
-      setTransactions(prev => [newTx, ...prev].slice(0, 50));
-    }, 8000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const filteredTransactions = useMemo(() => {

@@ -23,17 +23,17 @@ export default function Risk() {
     const loadData = async () => {
       const [liqData, metricsData] = await Promise.all([
         fetchLiquidations(),
-        fetchMetrics()
+        fetchMetrics(),
       ]);
-      setLiquidations(liqData.sort((a, b) => 
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      ));
+      setLiquidations(
+        liqData.sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        ),
+      );
       setMetrics(metricsData);
     };
 
     loadData();
-    const interval = setInterval(loadData, 8000);
-    return () => clearInterval(interval);
   }, []);
 
   if (!metrics || liquidations.length === 0) {

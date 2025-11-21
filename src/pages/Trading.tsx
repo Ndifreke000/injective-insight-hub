@@ -17,8 +17,6 @@ export default function Trading() {
     };
 
     loadData();
-    const interval = setInterval(loadData, 10000);
-    return () => clearInterval(interval);
   }, []);
 
   if (!metrics) {

@@ -21,19 +21,21 @@ export default function Blocks() {
     const loadData = async () => {
       const [blockData, metricsData] = await Promise.all([
         fetchLatestBlock(),
-        fetchMetrics()
+        fetchMetrics(),
       ]);
       setLatestBlock(blockData);
       setMetrics(metricsData);
-      
+
       // Fetch recent blocks with different heights
       const blocks: BlockData[] = [blockData];
       const currentHeight = parseInt(blockData.height);
-      
+
       // Fetch previous 9 blocks
       for (let i = 1; i < 10; i++) {
         try {
-          const response = await fetch(`https://sentry.tm.injective.network:443/block?height=${currentHeight - i}`);
+          const response = await fetch(
+            `https://sentry.tm.injective.network:443/block?height=${currentHeight - i}`,
+          );
           const data = await response.json();
           blocks.push({
             height: data.result?.block?.header?.height || "0",
@@ -41,7 +43,7 @@ export default function Blocks() {
             timestamp: data.result?.block?.header?.time || new Date().toISOString(),
             validator: data.result?.block?.header?.proposer_address || "",
             txCount: data.result?.block?.data?.txs?.length || 0,
-            gasUsed: data.result?.block?.header?.total_gas_used || "0"
+            gasUsed: data.result?.block?.header?.total_gas_used || "0",
           });
         } catch (error) {
           console.error(`Error fetching block ${currentHeight - i}:`, error);
@@ -51,8 +53,6 @@ export default function Blocks() {
     };
 
     loadData();
-    const interval = setInterval(loadData, 8000);
-    return () => clearInterval(interval);
   }, []);
 
   if (!latestBlock || !metrics) {
