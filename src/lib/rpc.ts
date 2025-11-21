@@ -118,16 +118,17 @@ export interface GovernanceProposal {
 
 export async function fetchLatestBlock(): Promise<BlockData> {
   try {
-    const response = await fetch(`${endpoints.rest}/cosmos/base/tendermint/v1beta1/blocks/latest`);
+    // Use the correct Tendermint RPC endpoint
+    const response = await fetch(`https://sentry.tm.injective.network:443/block`);
     const data = await response.json();
 
     return {
-      height: data.block?.header?.height || "0",
-      hash: data.block_id?.hash || "",
-      timestamp: data.block?.header?.time || new Date().toISOString(),
-      validator: data.block?.header?.proposer_address || "",
-      txCount: data.block?.data?.txs?.length || 0,
-      gasUsed: "0"
+      height: data.result?.block?.header?.height || "0",
+      hash: data.result?.block_id?.hash || "",
+      timestamp: data.result?.block?.header?.time || new Date().toISOString(),
+      validator: data.result?.block?.header?.proposer_address || "",
+      txCount: data.result?.block?.data?.txs?.length || 0,
+      gasUsed: data.result?.block?.header?.total_gas_used || "0"
     };
   } catch (error) {
     console.error("Error fetching block:", error);
@@ -191,50 +192,69 @@ async function calculateTPS(): Promise<number> {
 async function fetchInsuranceFundData(): Promise<string> {
   try {
     const funds = await withTimeout(insuranceApi.fetchInsuranceFunds(), 8000);
-    const fundsArray = Array.isArray(funds) ? funds : [];
-    const total = fundsArray.reduce((sum: number, f: any) =>
-      sum + parseFloat(f.balance || "0") / 1e18, 0); // Convert from base units
+    const fundsArray = Array.isArray(funds) ? funds : (funds as any).funds || [];
+    const total = fundsArray.reduce((sum: number, f: any) => {
+      const balance = parseFloat(f.balance || "0");
+      return sum + (balance / 1e18); // Convert from base units
+    }, 0);
     return total.toFixed(2);
   } catch (error) {
     console.error("Error fetching insurance funds:", error);
-    return (Math.random() * 10000000 + 20000000).toFixed(2);
+    return "0";
   }
 }
 
 export async function fetchMetrics(): Promise<MetricsData> {
   try {
-    const [derivativeMarkets, spotMarkets, block] = await Promise.all([
-      derivativesApi.fetchMarkets().catch(() => []),
-      spotApi.fetchMarkets().catch(() => []),
-      fetchLatestBlock()
+    const [derivativeMarkets, spotMarkets, block, validatorData, insuranceFund] = await Promise.all([
+      derivativesApi.fetchMarkets().catch(() => ({ markets: [] })),
+      spotApi.fetchMarkets().catch(() => ({ markets: [] })),
+      fetchLatestBlock(),
+      fetchValidatorData(),
+      fetchInsuranceFundData()
     ]);
 
     const tps = await calculateTPS();
 
-    const totalOI = (Array.isArray(derivativeMarkets) ? derivativeMarkets : []).reduce((sum: number, m: any) =>
-      sum + parseFloat(m.quote?.openInterest || "0"), 0);
+    // Extract markets arrays properly
+    const derivMarkets = Array.isArray(derivativeMarkets) ? derivativeMarkets : (derivativeMarkets as any).markets || [];
+    const spotMarketsArr = Array.isArray(spotMarkets) ? spotMarkets : (spotMarkets as any).markets || [];
 
-    const spotVolume = (Array.isArray(spotMarkets) ? spotMarkets : []).reduce((sum: number, m: any) =>
-      sum + parseFloat(m.quote?.volume24h || "0"), 0);
+    // Calculate total open interest (convert from base units)
+    const totalOI = derivMarkets.reduce((sum: number, m: any) => {
+      const oi = parseFloat(m.perpetualMarketInfo?.quantityTick || m.quote?.openInterest || "0");
+      return sum + (oi / 1e18); // Convert from base units to human readable
+    }, 0);
 
-    const derivVolume = (Array.isArray(derivativeMarkets) ? derivativeMarkets : []).reduce((sum: number, m: any) =>
-      sum + parseFloat(m.quote?.volume24h || "0"), 0);
+    // Calculate 24h volumes (convert from base units)
+    const spotVolume = spotMarketsArr.reduce((sum: number, m: any) => {
+      const vol = parseFloat(m.volume || m.quote?.volume || "0");
+      return sum + (vol / 1e18);
+    }, 0);
+
+    const derivVolume = derivMarkets.reduce((sum: number, m: any) => {
+      const vol = parseFloat(m.volume || m.quote?.volume || "0");
+      return sum + (vol / 1e18);
+    }, 0);
+
+    // Calculate total transactions from block history
+    const totalTxs = blockCache.reduce((sum, b) => sum + b.txCount, 0);
 
     return {
       blockHeight: parseInt(block.height) || 0,
-      totalTransactions: Math.floor(Math.random() * 10000000) + 100000000,
-      activeValidators: 100,
+      totalTransactions: totalTxs || 0,
+      activeValidators: validatorData.activeValidators,
       tps: parseFloat(tps.toFixed(2)),
       avgBlockTime: 0.7,
-      totalStaked: "100000000",
+      totalStaked: validatorData.totalStaked,
       openInterest: totalOI.toFixed(2),
-      insuranceFund: (Math.random() * 10000000 + 20000000).toFixed(2),
-      liquidationVolume24h: (Math.random() * 5000000 + 1000000).toFixed(2), // Still mock - needs transaction parsing
+      insuranceFund: insuranceFund,
+      liquidationVolume24h: "0", // Requires transaction stream parsing
       spotVolume24h: spotVolume.toFixed(2),
       derivativesVolume24h: derivVolume.toFixed(2),
-      uniqueTraders24h: Math.floor(Math.random() * 5000) + 10000, // Still mock - needs transaction analysis
-      ibcInflows24h: (Math.random() * 50000000 + 20000000).toFixed(2), // Still mock - needs IBC tx parsing
-      ibcOutflows24h: (Math.random() * 40000000 + 15000000).toFixed(2) // Still mock - needs IBC tx parsing
+      uniqueTraders24h: 0, // Requires transaction analysis
+      ibcInflows24h: "0", // Requires IBC transaction parsing
+      ibcOutflows24h: "0" // Requires IBC transaction parsing
     };
   } catch (error) {
     console.error("Error fetching metrics:", error);
@@ -518,20 +538,6 @@ export async function fetchRiskMetrics(): Promise<RiskMetric[]> {
 }
 
 export async function fetchGovernanceProposals(): Promise<GovernanceProposal[]> {
-  try {
-    const proposals: any = await withTimeout(govApi.fetchProposals(), 6000);
-
-    return proposals?.slice(0, 5).map((p: any) => ({
-      id: p.proposal_id || "0",
-      title: p.content?.title || `Proposal ${p.proposal_id}`,
-      status: p.status === "PROPOSAL_STATUS_VOTING_PERIOD" ? "active" :
-        p.status === "PROPOSAL_STATUS_PASSED" ? "passed" : "rejected",
-      votesFor: p.final_tally_result?.yes || "0",
-      votesAgainst: p.final_tally_result?.no || "0",
-      endTime: p.voting_end_time || new Date().toISOString()
-    })) || [];
-  } catch (error) {
-    console.error("Error fetching governance:", error);
-    return [];
-  }
+  // Governance functionality removed - returning empty array
+  return [];
 }

@@ -16,7 +16,6 @@ import CrossChain from "./pages/CrossChain";
 import Heatmap from "./pages/Heatmap";
 import Markets from "./pages/Markets";
 import Compliance from "./pages/Compliance";
-import Governance from "./pages/Governance";
 import Staking from "./pages/Staking";
 import Transactions from "./pages/Transactions";
 import NotFound from "./pages/NotFound";
@@ -51,7 +50,7 @@ const App = () => (
                     <Route path="/heatmap" element={<Heatmap />} />
                     <Route path="/markets" element={<Markets />} />
                     <Route path="/compliance" element={<Compliance />} />
-                    <Route path="/governance" element={<Governance />} />
+                    
                     <Route path="/staking" element={<Staking />} />
                     <Route path="/transactions" element={<Transactions />} />
                     <Route path="*" element={<NotFound />} />

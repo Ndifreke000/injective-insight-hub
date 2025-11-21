@@ -9,7 +9,7 @@ import {
   Activity,
   Building2,
   Shield,
-  Vote,
+  
   Coins,
   Moon,
   Sun,
@@ -43,7 +43,7 @@ const menuItems = [
   { title: "Risk Heatmap", url: "/heatmap", icon: Activity },
   { title: "Exchange Markets", url: "/markets", icon: Building2 },
   { title: "Compliance", url: "/compliance", icon: Shield },
-  { title: "Governance", url: "/governance", icon: Vote },
+  
   { title: "Staking", url: "/staking", icon: Coins },
 ];
 
