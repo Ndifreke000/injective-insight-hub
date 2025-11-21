@@ -9,7 +9,7 @@ import {
   Activity,
   Building2,
   Shield,
-  
+
   Coins,
   Moon,
   Sun,
@@ -39,11 +39,11 @@ const menuItems = [
   { title: "Trading Activity", url: "/trading", icon: TrendingUp },
   { title: "Derivatives", url: "/derivatives", icon: PieChart },
   { title: "Risk & Liquidations", url: "/risk", icon: AlertTriangle },
-  { title: "Cross-Chain", url: "/cross-chain", icon: ArrowRightLeft },
+  // Cross-Chain removed - no API for IBC data
   { title: "Risk Heatmap", url: "/heatmap", icon: Activity },
   { title: "Exchange Markets", url: "/markets", icon: Building2 },
   { title: "Compliance", url: "/compliance", icon: Shield },
-  
+
   { title: "Staking", url: "/staking", icon: Coins },
 ];
 

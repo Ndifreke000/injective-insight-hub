@@ -12,7 +12,7 @@ import Orderbook from "./pages/Orderbook";
 import Trading from "./pages/Trading";
 import Derivatives from "./pages/Derivatives";
 import Risk from "./pages/Risk";
-import CrossChain from "./pages/CrossChain";
+// CrossChain removed - no API for IBC data
 import Heatmap from "./pages/Heatmap";
 import Markets from "./pages/Markets";
 import Compliance from "./pages/Compliance";
@@ -46,11 +46,11 @@ const App = () => (
                     <Route path="/trading" element={<Trading />} />
                     <Route path="/derivatives" element={<Derivatives />} />
                     <Route path="/risk" element={<Risk />} />
-                    <Route path="/cross-chain" element={<CrossChain />} />
+                    {/* CrossChain route removed - no API for IBC data */}
                     <Route path="/heatmap" element={<Heatmap />} />
                     <Route path="/markets" element={<Markets />} />
                     <Route path="/compliance" element={<Compliance />} />
-                    
+
                     <Route path="/staking" element={<Staking />} />
                     <Route path="/transactions" element={<Transactions />} />
                     <Route path="*" element={<NotFound />} />

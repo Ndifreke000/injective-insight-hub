@@ -6,6 +6,7 @@ import { PieChart, TrendingUp, DollarSign, Activity } from "lucide-react";
 import { ExportButton } from "@/components/ExportButton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DataFilters } from "@/components/DataFilters";
+import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
 import {
   Table,
   TableBody,
@@ -26,30 +27,25 @@ export default function Derivatives() {
     };
 
     loadData();
-    const interval = setInterval(loadData, 8000);
-    return () => clearInterval(interval);
+    // Auto-refresh removed for better performance
   }, []);
 
   if (derivatives.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading derivatives data...</div>
-      </div>
-    );
+    return <PageLoadingSkeleton />;
   }
 
   const filteredDerivatives = useMemo(() => {
-    return derivatives.filter(d => 
+    return derivatives.filter(d =>
       d.market.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [derivatives, searchQuery]);
 
   const totalOI = filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.openInterest), 0);
-  const avgFunding = filteredDerivatives.length > 0 
-    ? filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.fundingRate), 0) / filteredDerivatives.length 
+  const avgFunding = filteredDerivatives.length > 0
+    ? filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.fundingRate), 0) / filteredDerivatives.length
     : 0;
-  const avgLeverage = filteredDerivatives.length > 0 
-    ? filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.leverage), 0) / filteredDerivatives.length 
+  const avgLeverage = filteredDerivatives.length > 0
+    ? filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.leverage), 0) / filteredDerivatives.length
     : 0;
 
   return (
@@ -121,7 +117,7 @@ export default function Derivatives() {
                 {filteredDerivatives.map((deriv, index) => {
                   const fundingRate = parseFloat(deriv.fundingRate);
                   const priceDiff = ((parseFloat(deriv.markPrice) - parseFloat(deriv.oraclePrice)) / parseFloat(deriv.oraclePrice)) * 100;
-                  
+
                   return (
                     <TableRow key={index}>
                       <TableCell className="font-medium">{deriv.market}</TableCell>

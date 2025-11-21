@@ -10,28 +10,41 @@ import {
   ChainGrpcGovApi
 } from "@injectivelabs/sdk-ts";
 import { getNetworkEndpoints, Network } from "@injectivelabs/networks";
+import { rpcManager } from "./rpc-manager";
 
-// Use publicnode.com endpoints for better reliability
+// Get default endpoints as base
 const defaultEndpoints = getNetworkEndpoints(Network.Mainnet);
-const endpoints = {
-  ...defaultEndpoints,
-  grpc: "injective-grpc.publicnode.com:443",
-  rest: "https://injective-rpc.publicnode.com:443"
+
+// Use RPC manager to get healthy endpoints
+const getEndpoints = () => {
+  const primaryRpc = rpcManager.getRPCByPriority('primary');
+  const fallbackRpc = rpcManager.getHealthyRPC();
+
+  return {
+    ...defaultEndpoints,
+    grpc: primaryRpc?.grpcUrl || fallbackRpc?.grpcUrl || defaultEndpoints.grpc,
+    rest: primaryRpc?.restUrl || fallbackRpc?.restUrl || defaultEndpoints.rest
+  };
 };
 
-// Initialize API clients with publicnode endpoints
+// Initialize API clients with dynamic endpoint selection
+let endpoints = getEndpoints();
 const derivativesApi = new IndexerGrpcDerivativesApi(endpoints.indexer);
 const spotApi = new IndexerGrpcSpotApi(endpoints.indexer);
 const transactionApi = new IndexerGrpcTransactionApi(endpoints.indexer);
 const accountApi = new IndexerGrpcAccountApi(endpoints.indexer);
 const oracleApi = new IndexerGrpcOracleApi(endpoints.indexer);
-const stakingApi = new ChainGrpcStakingApi(endpoints.grpc);
-const bankApi = new ChainGrpcBankApi(endpoints.grpc);
-const insuranceApi = new IndexerGrpcInsuranceFundApi(endpoints.indexer);
-const govApi = new ChainGrpcGovApi(endpoints.grpc);
 
-// Timeout helper to prevent hanging requests
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> {
+// Use secondary RPC for less frequent calls (staking, governance)
+const secondaryRpc = rpcManager.getRPCByPriority('secondary');
+const secondaryGrpc = secondaryRpc?.grpcUrl || endpoints.grpc;
+const stakingApi = new ChainGrpcStakingApi(secondaryGrpc);
+const bankApi = new ChainGrpcBankApi(secondaryGrpc);
+const insuranceApi = new IndexerGrpcInsuranceFundApi(endpoints.indexer);
+const govApi = new ChainGrpcGovApi(secondaryGrpc);
+
+// Timeout helper with reduced timeout
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 5000): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
@@ -58,12 +71,13 @@ export interface MetricsData {
   totalStaked: string;
   openInterest: string;
   insuranceFund: string;
-  liquidationVolume24h: string;
   spotVolume24h: string;
   derivativesVolume24h: string;
-  uniqueTraders24h: number;
-  ibcInflows24h: string;
-  ibcOutflows24h: string;
+  // Removed: no API available
+  // liquidationVolume24h: string;
+  // uniqueTraders24h: number;
+  // ibcInflows24h: string;
+  // ibcOutflows24h: string;
 }
 
 export interface OrderbookData {
@@ -143,21 +157,58 @@ export async function fetchLatestBlock(): Promise<BlockData> {
   }
 }
 
-// Helper function to fetch validator and staking data
-async function fetchValidatorData() {
-  try {
-    const response = await withTimeout(stakingApi.fetchValidators(), 8000);
-    const validators = Array.isArray(response) ? response : (response as any).validators || [];
-    const bondedValidators = validators.filter((v: any) => v.status === 3); // 3 = BOND_STATUS_BONDED
-    const totalBonded = bondedValidators.reduce((sum: number, v: any) =>
-      sum + parseFloat(v.delegatorShares || "0"), 0);
+// Validator data cache
+interface ValidatorCache {
+  data: { activeValidators: number; totalStaked: string } | null;
+  timestamp: number;
+  ttl: number; // 30 seconds
+}
 
-    return {
-      activeValidators: bondedValidators.length,
-      totalStaked: totalBonded.toFixed(0)
-    };
+const validatorCache: ValidatorCache = {
+  data: null,
+  timestamp: 0,
+  ttl: 30000
+};
+
+// Helper function to fetch validator and staking data with caching
+async function fetchValidatorData() {
+  // Check cache first
+  const now = Date.now();
+  if (validatorCache.data && (now - validatorCache.timestamp) < validatorCache.ttl) {
+    console.log('[RPC] Using cached validator data');
+    return validatorCache.data;
+  }
+
+  // Use RPC manager for automatic failover and retry
+  try {
+    const result = await rpcManager.withFallback(async () => {
+      const response = await withTimeout(stakingApi.fetchValidators(), 5000);
+      const validators = Array.isArray(response) ? response : (response as any).validators || [];
+      const bondedValidators = validators.filter((v: any) => v.status === 3); // 3 = BOND_STATUS_BONDED
+      const totalBonded = bondedValidators.reduce((sum: number, v: any) =>
+        sum + parseFloat(v.delegatorShares || "0"), 0);
+
+      return {
+        activeValidators: bondedValidators.length,
+        totalStaked: totalBonded.toFixed(0)
+      };
+    }, 2); // Retry up to 2 times
+
+    // Update cache
+    validatorCache.data = result;
+    validatorCache.timestamp = now;
+
+    return result;
   } catch (error) {
-    console.error("Error fetching validators:", error);
+    console.error("Error fetching validators (all retries failed):", error);
+
+    // Return cached data if available, even if stale
+    if (validatorCache.data) {
+      console.warn('[RPC] Returning stale validator cache due to error');
+      return validatorCache.data;
+    }
+
+    // Last resort fallback
     return {
       activeValidators: 100,
       totalStaked: "100000000"
@@ -248,12 +299,10 @@ export async function fetchMetrics(): Promise<MetricsData> {
       totalStaked: validatorData.totalStaked,
       openInterest: totalOI.toFixed(2),
       insuranceFund: insuranceFund,
-      liquidationVolume24h: "0", // Requires transaction stream parsing
       spotVolume24h: spotVolume.toFixed(2),
-      derivativesVolume24h: derivVolume.toFixed(2),
-      uniqueTraders24h: 0, // Requires transaction analysis
-      ibcInflows24h: "0", // Requires IBC transaction parsing
-      ibcOutflows24h: "0" // Requires IBC transaction parsing
+      derivativesVolume24h: derivVolume.toFixed(2)
+      // Removed fields - no API available:
+      // liquidationVolume24h, uniqueTraders24h, ibcInflows24h, ibcOutflows24h
     };
   } catch (error) {
     console.error("Error fetching metrics:", error);
@@ -266,12 +315,8 @@ export async function fetchMetrics(): Promise<MetricsData> {
       totalStaked: "0",
       openInterest: "0",
       insuranceFund: "0",
-      liquidationVolume24h: "0",
       spotVolume24h: "0",
-      derivativesVolume24h: "0",
-      uniqueTraders24h: 0,
-      ibcInflows24h: "0",
-      ibcOutflows24h: "0"
+      derivativesVolume24h: "0"
     };
   }
 }
@@ -283,7 +328,8 @@ export async function fetchOrderbooks(): Promise<OrderbookData[]> {
 
     const orderbookPromises = marketsArray.slice(0, 4).map(async (market: any) => {
       try {
-        const orderbook: any = await withTimeout(derivativesApi.fetchOrderbook(market.marketId), 5000);
+        // Use OrderbookV2 API (V1 is deprecated)
+        const orderbook: any = await withTimeout(derivativesApi.fetchOrderbookV2(market.marketId), 5000);
 
         const bids = (orderbook?.buys || []).slice(0, 10).map((b: any) => ({
           price: b.price || "0",
@@ -339,33 +385,11 @@ export async function fetchDerivatives(): Promise<DerivativeData[]> {
   }
 }
 
-export async function fetchLiquidations(): Promise<LiquidationEvent[]> {
-  // Liquidation events would need to be fetched from transaction stream
-  // This is a placeholder implementation
-  return Array(20).fill(0).map(() => ({
-    timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString(),
-    market: ["BTC-PERP", "ETH-PERP", "INJ-PERP"][Math.floor(Math.random() * 3)],
-    size: (Math.random() * 100000 + 10000).toFixed(2),
-    price: (Math.random() * 50000 + 10000).toFixed(2),
-    type: Math.random() > 0.5 ? "long" : "short" as "long" | "short"
-  }));
-}
+// Liquidation events removed - no transaction stream API available
+// export async function fetchLiquidations(): Promise<LiquidationEvent[]> { ... }
 
-export async function fetchCrossChainFlows(): Promise<CrossChainFlow[]> {
-  // IBC flow data would need dedicated endpoint
-  const chains = ["Cosmos", "Osmosis", "Ethereum", "Solana", "Arbitrum"];
-  return chains.map(chain => {
-    const inflow = Math.random() * 10000000 + 1000000;
-    const outflow = Math.random() * 8000000 + 1000000;
-    return {
-      chain,
-      inflow: inflow.toFixed(2),
-      outflow: outflow.toFixed(2),
-      netFlow: (inflow - outflow).toFixed(2),
-      topAsset: ["USDT", "USDC", "ATOM", "ETH"][Math.floor(Math.random() * 4)]
-    };
-  });
-}
+// Cross-chain/IBC flows removed - no API method available  
+// export async function fetchCrossChainFlows(): Promise<CrossChainFlow[]> { ... }
 
 export async function fetchRiskMetrics(): Promise<RiskMetric[]> {
   try {

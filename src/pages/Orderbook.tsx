@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExportButton } from "@/components/ExportButton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { DataFilters } from "@/components/DataFilters";
+import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
 
 export default function Orderbook() {
   const [orderbooks, setOrderbooks] = useState<OrderbookData[]>([]);
@@ -20,12 +21,11 @@ export default function Orderbook() {
     };
 
     loadData();
-    const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
+    // Auto-refresh removed for better performance
   }, []);
 
   const filteredOrderbooks = useMemo(() => {
-    return orderbooks.filter(ob => 
+    return orderbooks.filter(ob =>
       ob.market.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [orderbooks, searchQuery]);
@@ -53,11 +53,7 @@ export default function Orderbook() {
   }
 
   if (orderbooks.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading orderbook data...</div>
-      </div>
-    );
+    return <PageLoadingSkeleton />;
   }
 
   const currentBook = filteredOrderbooks[selectedMarket] || filteredOrderbooks[0];
@@ -240,34 +236,34 @@ export default function Orderbook() {
                     }))
                   ]}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis 
-                      dataKey="price" 
+                    <XAxis
+                      dataKey="price"
                       className="text-xs"
                       tick={{ fill: 'hsl(var(--muted-foreground))' }}
                     />
-                    <YAxis 
+                    <YAxis
                       className="text-xs"
                       tick={{ fill: 'hsl(var(--muted-foreground))' }}
                     />
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{
                         backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px'
                       }}
                     />
-                    <Area 
-                      type="stepAfter" 
-                      dataKey="bidDepth" 
-                      stroke="hsl(var(--success))" 
-                      fill="hsl(var(--success) / 0.2)" 
+                    <Area
+                      type="stepAfter"
+                      dataKey="bidDepth"
+                      stroke="hsl(var(--success))"
+                      fill="hsl(var(--success) / 0.2)"
                       strokeWidth={2}
                     />
-                    <Area 
-                      type="stepBefore" 
-                      dataKey="askDepth" 
-                      stroke="hsl(var(--destructive))" 
-                      fill="hsl(var(--destructive) / 0.2)" 
+                    <Area
+                      type="stepBefore"
+                      dataKey="askDepth"
+                      stroke="hsl(var(--destructive))"
+                      fill="hsl(var(--destructive) / 0.2)"
                       strokeWidth={2}
                     />
                   </AreaChart>

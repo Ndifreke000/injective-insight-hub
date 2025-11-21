@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchMetrics, MetricsData } from "@/lib/rpc";
 import { Coins, Users, TrendingUp, Award } from "lucide-react";
+import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
 
 export default function Staking() {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
@@ -14,16 +15,11 @@ export default function Staking() {
     };
 
     loadData();
-    const interval = setInterval(loadData, 15000);
-    return () => clearInterval(interval);
+    // Auto-refresh removed for better performance
   }, []);
 
   if (!metrics) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading staking data...</div>
-      </div>
-    );
+    return <PageLoadingSkeleton />;
   }
 
   const stakedPercentage = 72.5;
@@ -100,7 +96,7 @@ export default function Staking() {
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Not Bonded</div>
                 <div className="text-2xl font-bold">
-                  ${ ((100 - stakedPercentage) / 100 * 100).toFixed(2)}M
+                  ${((100 - stakedPercentage) / 100 * 100).toFixed(2)}M
                 </div>
               </div>
               <div>
@@ -220,7 +216,7 @@ export default function Staking() {
             {Array.from({ length: 10 }, (_, i) => {
               const stake = (8 - i * 0.5) * 1000000;
               const percentage = (stake / parseFloat(metrics!.totalStaked)) * 100;
-              
+
               return (
                 <div key={i}>
                   <div className="flex justify-between mb-1">
