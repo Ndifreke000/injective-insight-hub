@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Blocks & Transactions", url: "/blocks", icon: Box },
-  { title: "Transaction Monitoring", url: "/transactions", icon: Receipt },
+  // Transaction Monitoring removed - no transaction stream API
   { title: "Orderbook & Liquidity", url: "/orderbook", icon: BookOpen },
   { title: "Trading Activity", url: "/trading", icon: TrendingUp },
   { title: "Derivatives", url: "/derivatives", icon: PieChart },

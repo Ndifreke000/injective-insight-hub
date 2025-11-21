@@ -17,7 +17,7 @@ import Heatmap from "./pages/Heatmap";
 import Markets from "./pages/Markets";
 import Compliance from "./pages/Compliance";
 import Staking from "./pages/Staking";
-import Transactions from "./pages/Transactions";
+// Transactions removed - no transaction stream API
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,7 +52,7 @@ const App = () => (
                     <Route path="/compliance" element={<Compliance />} />
 
                     <Route path="/staking" element={<Staking />} />
-                    <Route path="/transactions" element={<Transactions />} />
+                    {/* Transactions route removed - no transaction stream API */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
