@@ -26,11 +26,26 @@ export default function Blocks() {
       setLatestBlock(blockData);
       setMetrics(metricsData);
       
-      // Simulate recent blocks
-      const blocks: BlockData[] = [];
-      for (let i = 0; i < 10; i++) {
-        const block = await fetchLatestBlock();
-        blocks.push(block);
+      // Fetch recent blocks with different heights
+      const blocks: BlockData[] = [blockData];
+      const currentHeight = parseInt(blockData.height);
+      
+      // Fetch previous 9 blocks
+      for (let i = 1; i < 10; i++) {
+        try {
+          const response = await fetch(`https://sentry.tm.injective.network:443/block?height=${currentHeight - i}`);
+          const data = await response.json();
+          blocks.push({
+            height: data.result?.block?.header?.height || "0",
+            hash: data.result?.block_id?.hash || "",
+            timestamp: data.result?.block?.header?.time || new Date().toISOString(),
+            validator: data.result?.block?.header?.proposer_address || "",
+            txCount: data.result?.block?.data?.txs?.length || 0,
+            gasUsed: data.result?.block?.header?.total_gas_used || "0"
+          });
+        } catch (error) {
+          console.error(`Error fetching block ${currentHeight - i}:`, error);
+        }
       }
       setRecentBlocks(blocks);
     };
