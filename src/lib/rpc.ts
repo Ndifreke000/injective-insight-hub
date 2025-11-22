@@ -60,6 +60,27 @@ export interface BlockData {
   validator: string;
   txCount: number;
   gasUsed: string;
+  gasPercentage?: number; // Percentage of block gas limit used
+  gasFeeINJ?: string; // Fee in INJ tokens
+  gasFeeUSDT?: string; // Approximate fee in USDT
+}
+
+// Injective gas constants
+const INJECTIVE_BLOCK_GAS_LIMIT = 50_000_000; // 50M gas per block
+const INJECTIVE_GAS_PRICE = 160_000_000; // Base gas price in inj (divide by 1e18 for INJ)
+const INJ_DECIMALS = 1e18;
+
+// Helper function to calculate gas metrics
+function calculateGasMetrics(gasUsed: number, injPriceUSD: number = 25): { percentage: number; feeINJ: string; feeUSDT: string } {
+  const percentage = (gasUsed / INJECTIVE_BLOCK_GAS_LIMIT) * 100;
+  const feeINJ = (gasUsed * INJECTIVE_GAS_PRICE) / INJ_DECIMALS;
+  const feeUSDT = feeINJ * injPriceUSD;
+
+  return {
+    percentage: parseFloat(percentage.toFixed(2)),
+    feeINJ: feeINJ.toFixed(6),
+    feeUSDT: feeUSDT.toFixed(4)
+  };
 }
 
 export interface MetricsData {
@@ -132,17 +153,36 @@ export interface GovernanceProposal {
 
 export async function fetchLatestBlock(): Promise<BlockData> {
   try {
-    // Use the correct Tendermint RPC endpoint
-    const response = await fetch(`https://sentry.tm.injective.network:443/block`);
-    const data = await response.json();
+    // Fetch both block and block_results to get gas data
+    const [blockResponse, resultsResponse] = await Promise.all([
+      fetch(`https://sentry.tm.injective.network:443/block`),
+      fetch(`https://sentry.tm.injective.network:443/block_results`)
+    ]);
+
+    const blockData = await blockResponse.json();
+    const resultsData = await resultsResponse.json();
+
+    // Calculate total gas used from all transactions
+    const txsResults = resultsData.result?.txs_results || [];
+    const totalGasUsed = txsResults.reduce((sum: number, tx: any) => {
+      return sum + parseInt(tx.gas_used || "0");
+    }, 0);
+
+    // Get current INJ price (using current market price ~$5.30)
+    // TODO: Fetch this from a real-time price feed API
+    const injPrice = 5.30; // Current INJ/USD price
+    const gasMetrics = calculateGasMetrics(totalGasUsed, injPrice);
 
     return {
-      height: data.result?.block?.header?.height || "0",
-      hash: data.result?.block_id?.hash || "",
-      timestamp: data.result?.block?.header?.time || new Date().toISOString(),
-      validator: data.result?.block?.header?.proposer_address || "",
-      txCount: data.result?.block?.data?.txs?.length || 0,
-      gasUsed: data.result?.block?.header?.total_gas_used || "0"
+      height: blockData.result?.block?.header?.height || "0",
+      hash: blockData.result?.block_id?.hash || "",
+      timestamp: blockData.result?.block?.header?.time || new Date().toISOString(),
+      validator: blockData.result?.block?.header?.proposer_address || "",
+      txCount: blockData.result?.block?.data?.txs?.length || 0,
+      gasUsed: totalGasUsed.toString(),
+      gasPercentage: gasMetrics.percentage,
+      gasFeeINJ: gasMetrics.feeINJ,
+      gasFeeUSDT: gasMetrics.feeUSDT
     };
   } catch (error) {
     console.error("Error fetching block:", error);
@@ -175,12 +215,14 @@ async function fetchValidatorData() {
   // Check cache first
   const now = Date.now();
   if (validatorCache.data && (now - validatorCache.timestamp) < validatorCache.ttl) {
-    console.log('[RPC] Using cached validator data');
+    const cacheAge = Math.round((now - validatorCache.timestamp) / 1000);
+    console.log(`[RPC] Using cached validator data (age: ${cacheAge}s, fresh: ${cacheAge < 30 ? 'yes' : 'no'})`);
     return validatorCache.data;
   }
 
   // Use RPC manager for automatic failover and retry
   try {
+    console.log('[RPC] Fetching fresh validator data from RPC...');
     const result = await rpcManager.withFallback(async () => {
       const response = await withTimeout(stakingApi.fetchValidators(), 5000);
       const validators = Array.isArray(response) ? response : (response as any).validators || [];
@@ -188,6 +230,7 @@ async function fetchValidatorData() {
       const totalBonded = bondedValidators.reduce((sum: number, v: any) =>
         sum + parseFloat(v.delegatorShares || "0"), 0);
 
+      console.log(`[RPC] ✓ Fetched ${bondedValidators.length} active validators from RPC`);
       return {
         activeValidators: bondedValidators.length,
         totalStaked: totalBonded.toFixed(0)
@@ -200,15 +243,17 @@ async function fetchValidatorData() {
 
     return result;
   } catch (error) {
-    console.error("Error fetching validators (all retries failed):", error);
+    console.error("[RPC] ✗ Error fetching validators (all retries failed):", error);
 
     // Return cached data if available, even if stale
     if (validatorCache.data) {
-      console.warn('[RPC] Returning stale validator cache due to error');
+      const cacheAge = Math.round((now - validatorCache.timestamp) / 1000);
+      console.warn(`[RPC] ⚠ Returning stale validator cache (age: ${cacheAge}s)`);
       return validatorCache.data;
     }
 
     // Last resort fallback
+    console.warn('[RPC] ⚠ Using hardcoded fallback: 100 validators (data may be inaccurate)');
     return {
       activeValidators: 100,
       totalStaked: "100000000"
@@ -228,10 +273,34 @@ async function calculateTPS(): Promise<number> {
       blockCache = blockCache.slice(0, 50);
     }
 
-    if (blockCache.length < 10) return 0;
+    // Calculate TPS even with few blocks (minimum 2 blocks)
+    if (blockCache.length < 2) {
+      // If we only have 1 block, fetch one more
+      try {
+        const prevHeight = parseInt(currentBlock.height) - 1;
+        const response = await fetch(
+          `https://sentry.tm.injective.network:443/block?height=${prevHeight}`
+        );
+        const data = await response.json();
+        const prevBlock: BlockData = {
+          height: data.result?.block?.header?.height || "0",
+          hash: data.result?.block_id?.hash || "",
+          timestamp: data.result?.block?.header?.time || new Date().toISOString(),
+          validator: data.result?.block?.header?.proposer_address || "",
+          txCount: data.result?.block?.data?.txs?.length || 0,
+          gasUsed: "0" // Don't need gas for TPS calc
+        };
+        blockCache.push(prevBlock);
+      } catch (e) {
+        console.error("Error fetching previous block for TPS:", e);
+        return 0;
+      }
+    }
 
-    const totalTxs = blockCache.slice(0, 10).reduce((sum, b) => sum + b.txCount, 0);
-    const timeSpan = 10 * 0.7; // Approximately 0.7s per block
+    // Use as many blocks as available (up to 10) for more accurate TPS
+    const blocksToUse = Math.min(10, blockCache.length);
+    const totalTxs = blockCache.slice(0, blocksToUse).reduce((sum, b) => sum + b.txCount, 0);
+    const timeSpan = blocksToUse * 0.7; // Approximately 0.7s per block
     return Math.max(0, totalTxs / timeSpan);
   } catch (error) {
     console.error("Error calculating TPS:", error);
@@ -344,19 +413,35 @@ export async function fetchOrderbooks(): Promise<OrderbookData[]> {
         // Use OrderbookV2 API (V1 is deprecated)
         const orderbook: any = await withTimeout(derivativesApi.fetchOrderbookV2(market.marketId), 5000);
 
+        // Get quote decimals for price conversion
+        // Derivative markets typically use USDT (6 decimals) as quote
+        const quoteDecimals = market.quoteToken?.decimals || 6;
+
+        // Convert price from chain format to human-readable
+        // For derivative markets: humanReadable = chainPrice / 10^quoteDecimals
+        // SDK returns prices in chain format (very large numbers)
+        const convertPrice = (chainPrice: string): string => {
+          const price = parseFloat(chainPrice || "0");
+          if (price === 0) return "0";
+          // DIVIDE by 10^quoteDecimals to convert from chain format
+          return (price / Math.pow(10, quoteDecimals)).toFixed(2);
+        };
+
         const bids = (orderbook?.buys || []).slice(0, 10).map((b: any) => ({
-          price: b.price || "0",
+          price: convertPrice(b.price),
           quantity: b.quantity || "0"
         }));
 
         const asks = (orderbook?.sells || []).slice(0, 10).map((a: any) => ({
-          price: a.price || "0",
+          price: convertPrice(a.price),
           quantity: a.quantity || "0"
         }));
 
         const bestBid = bids[0]?.price || "0";
         const bestAsk = asks[0]?.price || "0";
         const spread = (parseFloat(bestAsk) - parseFloat(bestBid)).toFixed(2);
+
+        console.log(`[Orderbook] ${market.ticker}: Best Bid $${bestBid}, Best Ask $${bestAsk}, Spread $${spread}`);
 
         return {
           market: market.ticker || "Unknown",
@@ -366,7 +451,8 @@ export async function fetchOrderbooks(): Promise<OrderbookData[]> {
           bids,
           asks
         };
-      } catch {
+      } catch (error) {
+        console.error(`Error fetching orderbook for market:`, error);
         return null;
       }
     });

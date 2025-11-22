@@ -31,20 +31,43 @@ export default function Blocks() {
       const blocks: BlockData[] = [blockData];
       const currentHeight = parseInt(blockData.height);
 
-      // Fetch previous 9 blocks
+      // Fetch previous 9 blocks with gas data
+      const injPrice = 5.30; // Current INJ price
+      const INJECTIVE_BLOCK_GAS_LIMIT = 50_000_000;
+      const INJECTIVE_GAS_PRICE = 160_000_000;
+      const INJ_DECIMALS = 1e18;
+
       for (let i = 1; i < 10; i++) {
         try {
-          const response = await fetch(
-            `https://sentry.tm.injective.network:443/block?height=${currentHeight - i}`,
-          );
-          const data = await response.json();
+          const [blockResponse, resultsResponse] = await Promise.all([
+            fetch(`https://sentry.tm.injective.network:443/block?height=${currentHeight - i}`),
+            fetch(`https://sentry.tm.injective.network:443/block_results?height=${currentHeight - i}`)
+          ]);
+
+          const blockData = await blockResponse.json();
+          const resultsData = await resultsResponse.json();
+
+          // Calculate total gas used
+          const txsResults = resultsData.result?.txs_results || [];
+          const totalGasUsed = txsResults.reduce((sum: number, tx: any) => {
+            return sum + parseInt(tx.gas_used || "0");
+          }, 0);
+
+          // Calculate gas metrics
+          const gasPercentage = parseFloat(((totalGasUsed / INJECTIVE_BLOCK_GAS_LIMIT) * 100).toFixed(2));
+          const feeINJ = ((totalGasUsed * INJECTIVE_GAS_PRICE) / INJ_DECIMALS).toFixed(6);
+          const feeUSDT = (parseFloat(feeINJ) * injPrice).toFixed(4);
+
           blocks.push({
-            height: data.result?.block?.header?.height || "0",
-            hash: data.result?.block_id?.hash || "",
-            timestamp: data.result?.block?.header?.time || new Date().toISOString(),
-            validator: data.result?.block?.header?.proposer_address || "",
-            txCount: data.result?.block?.data?.txs?.length || 0,
-            gasUsed: data.result?.block?.header?.total_gas_used || "0",
+            height: blockData.result?.block?.header?.height || "0",
+            hash: blockData.result?.block_id?.hash || "",
+            timestamp: blockData.result?.block?.header?.time || new Date().toISOString(),
+            validator: blockData.result?.block?.header?.proposer_address || "",
+            txCount: blockData.result?.block?.data?.txs?.length || 0,
+            gasUsed: totalGasUsed.toString(),
+            gasPercentage: gasPercentage,
+            gasFeeINJ: feeINJ,
+            gasFeeUSDT: feeUSDT,
           });
         } catch (error) {
           console.error(`Error fetching block ${currentHeight - i}:`, error);
@@ -64,7 +87,7 @@ export default function Blocks() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">Block & Transaction Analysis</h1>
-        <p className="text-muted-foreground">Real-time blockchain activity monitoring</p>
+        <p className="text-muted-foreground">Real-time blockchain activity monitoring · <span className="font-semibold text-primary">Injective Network</span></p>
       </div>
 
       {/* Key Metrics */}
@@ -87,14 +110,14 @@ export default function Blocks() {
           title="Transaction Throughput"
           value={`${metrics.tps} TPS`}
           icon={Zap}
-          change={`${metrics.totalTransactions.toLocaleString()} total`}
+          change={`${metrics.totalTransactions.toLocaleString()} recent txs`}
           trend="up"
         />
         <MetricCard
-          title="Gas Usage"
-          value={latestBlock.gasUsed}
+          title="Gas Usage (Injective)"
+          value={latestBlock.gasPercentage ? `${latestBlock.gasPercentage}%` : "0%"}
           icon={Activity}
-          change="Current block"
+          change={latestBlock.gasFeeUSDT ? `~$${latestBlock.gasFeeUSDT} (${latestBlock.gasFeeINJ} INJ)` : "Current block"}
           trend="neutral"
         />
       </div>
@@ -144,6 +167,7 @@ export default function Blocks() {
                   <TableHead>Validator</TableHead>
                   <TableHead>Transactions</TableHead>
                   <TableHead>Gas Used</TableHead>
+                  <TableHead className="text-right">Fee (INJ)</TableHead>
                   <TableHead>Time</TableHead>
                 </TableRow>
               </TableHeader>
@@ -154,7 +178,18 @@ export default function Blocks() {
                     <TableCell className="font-mono text-xs">{block.hash.substring(0, 16)}...</TableCell>
                     <TableCell className="font-mono text-xs">{block.validator.substring(0, 20)}...</TableCell>
                     <TableCell>{block.txCount}</TableCell>
-                    <TableCell>{parseInt(block.gasUsed).toLocaleString()}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-semibold">{block.gasPercentage ? `${block.gasPercentage}%` : '0%'}</span>
+                        <span className="text-xs text-muted-foreground">{parseInt(block.gasUsed).toLocaleString()} gas</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="font-mono text-xs">{block.gasFeeINJ || '0.000000'}</span>
+                        <span className="text-xs text-muted-foreground">${block.gasFeeUSDT || '0.0000'}</span>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-xs">
                       {new Date(block.timestamp).toLocaleTimeString()}
                     </TableCell>
