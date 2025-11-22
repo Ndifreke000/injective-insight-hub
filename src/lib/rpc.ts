@@ -11,6 +11,13 @@ import {
 } from "@injectivelabs/sdk-ts";
 import { getNetworkEndpoints, Network } from "@injectivelabs/networks";
 import { rpcManager } from "./rpc-manager";
+import {
+  fetchInsuranceFundFromBackend,
+  fetchValidatorsFromBackend,
+  fetch24hVolumeFromBackend,
+  fetchOpenInterestFromBackend,
+  getINJPriceUSD,
+} from "./backend-api";
 
 // Get default endpoints as base
 const defaultEndpoints = getNetworkEndpoints(Network.Mainnet);
@@ -168,9 +175,14 @@ export async function fetchLatestBlock(): Promise<BlockData> {
       return sum + parseInt(tx.gas_used || "0");
     }, 0);
 
-    // Get current INJ price (using current market price ~$5.30)
-    // TODO: Fetch this from a real-time price feed API
-    const injPrice = 5.30; // Current INJ/USD price
+    // Get REAL INJ price from backend (cached 24h)
+    let injPrice = 5.30; // Fallback
+    try {
+      injPrice = await getINJPriceUSD();
+      console.log(`[RPC] ✓ Using real INJ price: $${injPrice}`);
+    } catch (e) {
+      console.warn('[RPC] ⚠ Failed to fetch INJ price from backend, using fallback $5.30');
+    }
     const gasMetrics = calculateGasMetrics(totalGasUsed, injPrice);
 
     return {
@@ -210,50 +222,22 @@ const validatorCache: ValidatorCache = {
   ttl: 30000
 };
 
-// Helper function to fetch validator and staking data with caching
+// Helper function to fetch validator and staking data from BACKEND
 async function fetchValidatorData() {
-  // Check cache first
-  const now = Date.now();
-  if (validatorCache.data && (now - validatorCache.timestamp) < validatorCache.ttl) {
-    const cacheAge = Math.round((now - validatorCache.timestamp) / 1000);
-    console.log(`[RPC] Using cached validator data (age: ${cacheAge}s, fresh: ${cacheAge < 30 ? 'yes' : 'no'})`);
-    return validatorCache.data;
-  }
-
-  // Use RPC manager for automatic failover and retry
   try {
-    console.log('[RPC] Fetching fresh validator data from RPC...');
-    const result = await rpcManager.withFallback(async () => {
-      const response = await withTimeout(stakingApi.fetchValidators(), 5000);
-      const validators = Array.isArray(response) ? response : (response as any).validators || [];
-      const bondedValidators = validators.filter((v: any) => v.status === 3); // 3 = BOND_STATUS_BONDED
-      const totalBonded = bondedValidators.reduce((sum: number, v: any) =>
-        sum + parseFloat(v.delegatorShares || "0"), 0);
+    console.log('[RPC] Fetching validator data from backend...');
+    const data = await fetchValidatorsFromBackend();
 
-      console.log(`[RPC] ✓ Fetched ${bondedValidators.length} active validators from RPC`);
-      return {
-        activeValidators: bondedValidators.length,
-        totalStaked: totalBonded.toFixed(0)
-      };
-    }, 2); // Retry up to 2 times
+    console.log(`[RPC] ✓ Fetched ${data.activeCount} active validators from backend`);
+    console.log(`[RPC] ✓ Total staked: ${data.totalStaked} INJ`);
 
-    // Update cache
-    validatorCache.data = result;
-    validatorCache.timestamp = now;
-
-    return result;
+    return {
+      activeValidators: data.activeCount,
+      totalStaked: data.totalStaked
+    };
   } catch (error) {
-    console.error("[RPC] ✗ Error fetching validators (all retries failed):", error);
-
-    // Return cached data if available, even if stale
-    if (validatorCache.data) {
-      const cacheAge = Math.round((now - validatorCache.timestamp) / 1000);
-      console.warn(`[RPC] ⚠ Returning stale validator cache (age: ${cacheAge}s)`);
-      return validatorCache.data;
-    }
-
-    // Last resort fallback
-    console.warn('[RPC] ⚠ Using hardcoded fallback: 100 validators (data may be inaccurate)');
+    console.error("[RPC] ✗ Error fetching validators from backend:", error);
+    console.warn('[RPC] ⚠ Using hardcoded fallback: 100 validators');
     return {
       activeValidators: 100,
       totalStaked: "100000000"
@@ -308,36 +292,19 @@ async function calculateTPS(): Promise<number> {
   }
 }
 
-// Helper function to fetch insurance fund data
+// Helper function to fetch insurance fund data from BACKEND
 async function fetchInsuranceFundData(): Promise<string> {
-  console.log('[RPC] Fetching insurance fund data...');
+  console.log('[RPC] Fetching insurance fund data from backend...');
   try {
-    const funds = await rpcManager.withFallback(async (endpoint) => {
-      const client = new IndexerGrpcInsuranceFundApi(endpoint.grpcUrl);
-      return await withTimeout(client.fetchInsuranceFunds(), 8000);
-    }, 2);
+    const data = await fetchInsuranceFundFromBackend();
 
-    const fundsArray = Array.isArray(funds) ? funds : (funds as any).funds || [];
-    console.log(`[RPC] ✓ Fetched ${fundsArray.length} insurance funds from API`);
+    console.log(`[RPC] ✓ Fetched ${data.count} insurance funds from backend`);
+    console.log(`[RPC] ✓ Total Insurance Fund: $${data.totalBalance.toFixed(2)}`);
 
-    if (fundsArray.length === 0) {
-      console.warn('[RPC] ⚠ Insurance fund API returned 0 funds (this may be normal)');
-    }
-
-    const total = fundsArray.reduce((sum: number, f: any) => {
-      const balance = parseFloat(f.balance || "0");
-      const balanceConverted = balance / 1e18; // Convert from base units
-      if (balanceConverted > 0) {
-        console.log(`  - Fund "${f.marketTicker || f.marketId || 'Unknown'}": $${balanceConverted.toFixed(2)}`);
-      }
-      return sum + balanceConverted;
-    }, 0);
-
-    console.log(`[RPC] ✓ Total Insurance Fund: $${total.toFixed(2)}`);
-    return total.toFixed(2);
+    return data.totalBalance.toFixed(2);
   } catch (error) {
-    console.error("[RPC] ✗ Error fetching insurance funds:", error);
-    console.warn("[RPC] ⚠ Returning $0 for insurance fund (RPC call failed - check network/API)");
+    console.error("[RPC] ✗ Error fetching insurance funds from backend:", error);
+    console.warn("[RPC] ⚠ Returning $0 for insurance fund (backend call failed)");
     return "0";
   }
 }
@@ -376,12 +343,32 @@ export async function fetchMetrics(): Promise<MetricsData> {
 
     console.log(`[fetchMetrics] Found ${derivMarkets.length} derivative markets, ${spotMarketsArr.length} spot markets`);
 
-    // Calculate estimated metrics based on market count
-    // NOTE: Actual per-market volume/OI would require individual API calls for each market
-    // which is too expensive - using market-count based estimates instead
-    const estimatedOI = derivMarkets.length * 8800000; // ~8.8M per market average
-    const estimatedSpotVolume = spotMarketsArr.length * 2000000; // ~2M per market  
-    const estimatedDerivVolume = derivMarkets.length * 11800000; // ~11.8M per market
+    // Fetch REAL volume and OI from backend
+    let realVolume = { spot: "0", derivative: "0" };
+    let realOI = "0";
+
+    try {
+      console.log('[fetchMetrics] Fetching REAL volume from backend...');
+      const volumeData = await fetch24hVolumeFromBackend();
+      realVolume = { spot: volumeData.spot, derivative: volumeData.derivative };
+      console.log(`[fetchMetrics] ✓ Real 24h volume: Spot $${(parseFloat(realVolume.spot) / 1e6).toFixed(2)}M, Deriv $${(parseFloat(realVolume.derivative) / 1e6).toFixed(2)}M`);
+    } catch (e) {
+      console.warn('[fetchMetrics] ⚠ Failed to fetch real volume from backend, using estimates');
+      realVolume = {
+        spot: (spotMarketsArr.length * 2000000).toString(),
+        derivative: (derivMarkets.length * 11800000).toString()
+      };
+    }
+
+    try {
+      console.log('[fetchMetrics] Fetching REAL open interest from backend...');
+      const oiData = await fetchOpenInterestFromBackend();
+      realOI = oiData.total;
+      console.log(`[fetchMetrics] ✓ Real open interest: $${(parseFloat(realOI) / 1e6).toFixed(2)}M`);
+    } catch (e) {
+      console.warn('[fetchMetrics] ⚠ Failed to fetch real OI from backend, using estimate');
+      realOI = (derivMarkets.length * 8800000).toString();
+    }
 
     // Calculate total transactions from block history
     const totalTxs = blockCache.reduce((sum, b) => sum + b.txCount, 0);
@@ -393,10 +380,10 @@ export async function fetchMetrics(): Promise<MetricsData> {
       tps: parseFloat(tps.toFixed(2)),
       avgBlockTime: 0.7,
       totalStaked: validatorData.totalStaked || "100000000",
-      openInterest: estimatedOI.toFixed(2),
+      openInterest: realOI,
       insuranceFund: insuranceFund,
-      spotVolume24h: estimatedSpotVolume.toFixed(2),
-      derivativesVolume24h: estimatedDerivVolume.toFixed(2)
+      spotVolume24h: realVolume.spot,
+      derivativesVolume24h: realVolume.derivative
       // Removed fields - no API available:
       // liquidationVolume24h, uniqueTraders24h, ibcInflows24h, ibcOutflows24h
     };

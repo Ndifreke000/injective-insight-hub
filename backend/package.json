@@ -1,0 +1,28 @@
+{
+    "name": "injective-insight-backend",
+    "version": "1.0.0",
+    "description": "Backend proxy server for Injective Insight Hub",
+    "main": "dist/server.js",
+    "type": "module",
+    "scripts": {
+        "dev": "tsx watch src/server.ts",
+        "build": "tsc",
+        "start": "node dist/server.js",
+        "test": "echo \"No tests yet\""
+    },
+    "dependencies": {
+        "@injectivelabs/networks": "^1.16.28",
+        "@injectivelabs/sdk-ts": "^1.16.28",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.5",
+        "express": "^4.21.2",
+        "node-cache": "^5.1.2"
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.17",
+        "@types/express": "^5.0.0",
+        "@types/node": "^22.16.5",
+        "tsx": "^4.19.2",
+        "typescript": "^5.8.3"
+    }
+}
