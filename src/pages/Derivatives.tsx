@@ -30,23 +30,30 @@ export default function Derivatives() {
     // Auto-refresh removed for better performance
   }, []);
 
-  if (derivatives.length === 0) {
-    return <PageLoadingSkeleton />;
-  }
-
+  // CRITICAL: All hooks must be called BEFORE any conditional returns
   const filteredDerivatives = useMemo(() => {
     return derivatives.filter(d =>
       d.market.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [derivatives, searchQuery]);
 
-  const totalOI = filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.openInterest), 0);
-  const avgFunding = filteredDerivatives.length > 0
-    ? filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.fundingRate), 0) / filteredDerivatives.length
-    : 0;
-  const avgLeverage = filteredDerivatives.length > 0
-    ? filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.leverage), 0) / filteredDerivatives.length
-    : 0;
+  // Memoize expensive calculations - only recalculate when filteredDerivatives changes
+  const { totalOI, avgFunding, avgLeverage } = useMemo(() => {
+    const oi = filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.openInterest), 0);
+    const funding = filteredDerivatives.length > 0
+      ? filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.fundingRate), 0) / filteredDerivatives.length
+      : 0;
+    const leverage = filteredDerivatives.length > 0
+      ? filteredDerivatives.reduce((sum, d) => sum + parseFloat(d.leverage), 0) / filteredDerivatives.length
+      : 0;
+
+    return { totalOI: oi, avgFunding: funding, avgLeverage: leverage };
+  }, [filteredDerivatives]);
+
+  // Loading state check AFTER all hooks
+  if (derivatives.length === 0) {
+    return <PageLoadingSkeleton />;
+  }
 
   return (
     <div className="space-y-6">
