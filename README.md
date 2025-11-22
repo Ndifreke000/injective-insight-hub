@@ -1,4 +1,4 @@
-<img width="512" height="512" alt="injective" src="https://github.com/user-attachments/assets/6598222f-1936-490b-8671-d9292385ec7e" />
+<img width="150" height="150" alt="injective" src="https://github.com/user-attachments/assets/6598222f-1936-490b-8671-d9292385ec7e" />
 
 # Injective Insight Hub
 
