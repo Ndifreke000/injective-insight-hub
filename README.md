@@ -1,3 +1,5 @@
+<img width="512" height="512" alt="injective" src="https://github.com/user-attachments/assets/6598222f-1936-490b-8671-d9292385ec7e" />
+
 # Injective Insight Hub
 
 A high-performance analytics and intelligence dashboard for the Injective Protocol, providing real-time insights into the ecosystem with optimized RPC integration and intelligent caching.
