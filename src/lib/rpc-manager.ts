@@ -43,7 +43,7 @@ class RPCManager {
         this.endpoints = [
             {
                 name: 'PublicNode',
-                grpcUrl: 'injective-grpc.publicnode.com:443',
+                grpcUrl: 'https://injective-grpc.publicnode.com:443',
                 restUrl: 'https://injective-rpc.publicnode.com:443',
                 isHealthy: true,
                 lastHealthCheck: Date.now(),
@@ -53,7 +53,7 @@ class RPCManager {
             },
             {
                 name: 'Sentry TM',
-                grpcUrl: 'sentry.grpc.injective.network:443',
+                grpcUrl: 'https://sentry.grpc.injective.network:443',
                 restUrl: 'https://sentry.tm.injective.network:443',
                 isHealthy: true,
                 lastHealthCheck: Date.now(),

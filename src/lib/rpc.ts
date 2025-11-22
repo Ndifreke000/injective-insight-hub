@@ -310,16 +310,34 @@ async function calculateTPS(): Promise<number> {
 
 // Helper function to fetch insurance fund data
 async function fetchInsuranceFundData(): Promise<string> {
+  console.log('[RPC] Fetching insurance fund data...');
   try {
-    const funds = await withTimeout(insuranceApi.fetchInsuranceFunds(), 8000);
+    const funds = await rpcManager.withFallback(async (endpoint) => {
+      const client = new IndexerGrpcInsuranceFundApi(endpoint.grpcUrl);
+      return await withTimeout(client.fetchInsuranceFunds(), 8000);
+    }, 2);
+
     const fundsArray = Array.isArray(funds) ? funds : (funds as any).funds || [];
+    console.log(`[RPC] ✓ Fetched ${fundsArray.length} insurance funds from API`);
+
+    if (fundsArray.length === 0) {
+      console.warn('[RPC] ⚠ Insurance fund API returned 0 funds (this may be normal)');
+    }
+
     const total = fundsArray.reduce((sum: number, f: any) => {
       const balance = parseFloat(f.balance || "0");
-      return sum + (balance / 1e18); // Convert from base units
+      const balanceConverted = balance / 1e18; // Convert from base units
+      if (balanceConverted > 0) {
+        console.log(`  - Fund "${f.marketTicker || f.marketId || 'Unknown'}": $${balanceConverted.toFixed(2)}`);
+      }
+      return sum + balanceConverted;
     }, 0);
+
+    console.log(`[RPC] ✓ Total Insurance Fund: $${total.toFixed(2)}`);
     return total.toFixed(2);
   } catch (error) {
-    console.error("Error fetching insurance funds:", error);
+    console.error("[RPC] ✗ Error fetching insurance funds:", error);
+    console.warn("[RPC] ⚠ Returning $0 for insurance fund (RPC call failed - check network/API)");
     return "0";
   }
 }
@@ -548,6 +566,7 @@ export async function fetchDerivatives(): Promise<DerivativeData[]> {
 // export async function fetchCrossChainFlows(): Promise<CrossChainFlow[]> { ... }
 
 export async function fetchRiskMetrics(): Promise<RiskMetric[]> {
+  console.log('[RPC] Calculating risk metrics from live market data...');
   try {
     const [derivativeMarkets, insuranceFund, orderbooks] = await Promise.all([
       derivativesApi.fetchMarkets().catch(() => []),
@@ -556,6 +575,9 @@ export async function fetchRiskMetrics(): Promise<RiskMetric[]> {
     ]);
 
     const marketsArray = Array.isArray(derivativeMarkets) ? derivativeMarkets : [];
+    console.log(`[RPC] Using ${marketsArray.length} derivative markets for risk calculation`);
+    console.log(`[RPC] Insurance Fund Balance: $${insuranceFund}`);
+    console.log(`[RPC] Orderbook Data: ${orderbooks.length} markets loaded`);
 
     // Calculate Oracle Health based on price deviations
     const oracleHealth = (() => {
@@ -633,7 +655,7 @@ export async function fetchRiskMetrics(): Promise<RiskMetric[]> {
       };
     })();
 
-    return [
+    const riskMetrics = [
       {
         category: "Oracle Health",
         level: oracleHealth.level,
@@ -671,8 +693,14 @@ export async function fetchRiskMetrics(): Promise<RiskMetric[]> {
         description: "Market volatility levels"
       }
     ];
+
+    console.log('[RPC] ✓ Risk Metrics Calculated Successfully:');
+    console.log('  ', riskMetrics.map(r => `${r.category}: ${r.score}/100 (${r.level})`).join(', '));
+
+    return riskMetrics;
   } catch (error) {
-    console.error("Error calculating risk metrics:", error);
+    console.error("[RPC] ✗ Error calculating risk metrics:", error);
+    console.warn('[RPC] ⚠ Using random fallback risk metrics (calculation failed)');
     // Fallback to previous mock implementation
     const riskLevels: Array<"low" | "medium" | "high"> = ["low", "medium", "high"];
     return [

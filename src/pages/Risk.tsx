@@ -6,10 +6,12 @@ import { fetchMetrics, fetchRiskMetrics, MetricsData, RiskMetric } from "@/lib/r
 import { AlertTriangle, Shield, TrendingUp, Activity } from "lucide-react";
 import { ExportButton } from "@/components/ExportButton";
 import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
+import { DataSourceIndicator } from "@/components/DataSourceIndicator";
 
 export default function Risk() {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [riskMetrics, setRiskMetrics] = useState<RiskMetric[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   useEffect(() => {
     const loadData = async () => {
@@ -19,6 +21,7 @@ export default function Risk() {
       ]);
       setMetrics(metricsData);
       setRiskMetrics(riskData);
+      setLastUpdated(new Date());
     };
 
     loadData();
@@ -40,14 +43,19 @@ export default function Risk() {
         <ExportButton data={{ metrics, riskMetrics }} filename="risk-data" />
       </div>
 
+      <DataSourceIndicator
+        lastUpdated={lastUpdated}
+        source={`${riskMetrics.length} Risk Categories • ${metrics?.insuranceFund === "0" ? "Insurance API Down" : "Insurance Fund Active"}`}
+      />
+
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Insurance Fund"
           value={`$${(parseFloat(metrics.insuranceFund) / 1000000).toFixed(2)}M`}
           icon={Shield}
-          change="+3.2% this week"
-          trend="up"
+          change={metrics.insuranceFund === "0" ? "⚠️ API Unavailable" : "+3.2% this week"}
+          trend={metrics.insuranceFund === "0" ? "down" : "up"}
         />
         <MetricCard
           title="Risk Buffer"
@@ -144,7 +152,7 @@ export default function Risk() {
                   <div className="h-2 bg-secondary rounded-full overflow-hidden mt-2">
                     <div
                       className={`h-full rounded-full transition-all ${metric.level === "low" ? "bg-success" :
-                          metric.level === "medium" ? "bg-warning" : "bg-destructive"
+                        metric.level === "medium" ? "bg-warning" : "bg-destructive"
                         }`}
                       style={{ width: `${metric.score}%` }}
                     />

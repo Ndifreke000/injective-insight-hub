@@ -42,8 +42,6 @@ const menuItems = [
   // Cross-Chain removed - no API for IBC data
   { title: "Risk Heatmap", url: "/heatmap", icon: Activity },
   { title: "Exchange Markets", url: "/markets", icon: Building2 },
-  { title: "Compliance", url: "/compliance", icon: Shield },
-
   { title: "Staking", url: "/staking", icon: Coins },
 ];
 

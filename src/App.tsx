@@ -12,10 +12,8 @@ import Orderbook from "./pages/Orderbook";
 import Trading from "./pages/Trading";
 import Derivatives from "./pages/Derivatives";
 import Risk from "./pages/Risk";
-// CrossChain removed - no API for IBC data
 import Heatmap from "./pages/Heatmap";
 import Markets from "./pages/Markets";
-import Compliance from "./pages/Compliance";
 import Staking from "./pages/Staking";
 // Transactions removed - no transaction stream API
 import NotFound from "./pages/NotFound";
@@ -49,8 +47,6 @@ const App = () => (
                     {/* CrossChain route removed - no API for IBC data */}
                     <Route path="/heatmap" element={<Heatmap />} />
                     <Route path="/markets" element={<Markets />} />
-                    <Route path="/compliance" element={<Compliance />} />
-
                     <Route path="/staking" element={<Staking />} />
                     {/* Transactions route removed - no transaction stream API */}
                     <Route path="*" element={<NotFound />} />

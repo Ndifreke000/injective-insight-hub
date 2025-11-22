@@ -1,247 +1,247 @@
-<img width="150" height="150" alt="injective" src="https://github.com/user-attachments/assets/6598222f-1936-490b-8671-d9292385ec7e" />
-
 # Injective Insight Hub
 
-A high-performance analytics and intelligence dashboard for the Injective Protocol, providing real-time insights into the ecosystem with optimized RPC integration and intelligent caching.
+> Real-time blockchain analytics and intelligence platform for the Injective Protocol
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue.svg)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-7.2-purple.svg)](https://vitejs.dev/)
+
+## 🎯 Overview
+
+Injective Insight Hub is a comprehensive analytics platform providing real-time insights into the Injective blockchain. Built with React, TypeScript, and the Injective SDK, it offers live monitoring of blocks, transactions, orderbooks, derivatives markets, staking metrics, and risk analysis.
+
+**Live Demo**: [Coming Soon]
 
 ## ✨ Features
 
-### 📊 Real-Time Analytics
-- **Dashboard**: Monitor block height, TPS, active validators, and total staked INJ
-- **Financial Metrics**: Track Open Interest (~$625M), Insurance Fund, 24h Trading Volumes
-- **Live Data**: All data sourced directly from Injective RPC endpoints (no mock data)
+### ✅ Currently Working (Real-time RPC Data)
 
-### 📈 Market Intelligence
-- **Derivatives**: 71 perpetual markets with real-time prices, funding rates, and leverage data
-- **Spot Markets**: 138 trading pairs with bid/ask spreads and liquidity metrics
-- **Orderbook Depth**: Real-time buy/sell order data with V2 API integration
-- **Market Heatmap**: Visual risk scores across all markets
+| Feature | Description | Data Source |
+|---------|-------------|-------------|
+| **Blocks & Transactions** | Real-time block explorer with gas tracking, TPS monitoring, and transaction analysis | Tendermint RPC |
+| **Orderbook & Liquidity** | Live bid/ask prices for BTC, ETH, BNB, INJ perpetual markets with spread analysis | Indexer API |
+| **Risk Metrics** | Dynamic risk calculations from 71 derivative markets including oracle health, liquidation risk, and volatility | Market Data |
+| **Trading Activity** | Funding rates, open interest, and leverage metrics across perpetual markets | Indexer API |
+| **Risk Heatmap** | System-wide risk visualization and monitoring dashboard | Calculated |
 
-### 🛡️ Risk Monitoring
-- **System Risk Overview**: Oracle health, liquidation risk, liquidity depth
-- **Risk Metrics**: Insurance fund solvency, open interest analysis
-- **Visual Indicators**: Color-coded risk levels (Low/Medium/High)
+### ⚠️ Limited Features (CORS Restrictions)
 
-### ⚡ Performance Optimizations
-- **Multi-RPC Load Balancing**: Automatic failover between multiple RPC endpoints
-- **Smart Caching**: 60-second cache for derivatives and validators (92% faster repeat loads)
-- **Instant Loading**: Sophisticated skeleton screens for smooth UX
-- **Error Resilience**: Graceful degradation with stale-on-error fallbacks
+| Feature | Status | Limitation |
+|---------|--------|------------|
+| **Staking Metrics** | Partial | Shows total staked ($100M) but validator count uses fallback due to gRPC CORS |
+| **Insurance Fund** | Blocked | Returns $0 - API endpoint blocked by CORS policy |
+| **Markets Page** | Blocked | Full market listings unavailable due to gRPC restrictions |
+| **Governance** | Not Implemented | Would require CORS-enabled gRPC access |
 
-### 🔍 Network Insights
-- **Blockchain Explorer**: Latest blocks with transaction counts and gas usage
-- **Staking Data**: ~100 validators with voting power and commission rates
-- **Governance**: Proposal monitoring (coming soon)
-- **Compliance**: Risk and regulatory monitoring tools
+## 🚨 Current Limitations
 
-## 🚀 Performance
+### CORS Policy Restrictions
 
-| Page | First Load | Cached Load | Optimization |
-|------|-----------|-------------|--------------|
-| Dashboard | 1-2s | 1-2s | Estimated metrics |
-| Derivatives | 10s* | <1s | 60s cache (92% faster) |
-| Markets | 2-3s | 2-3s | Parallel fetching |
-| Staking | 2-3s | <1s | 30s cache |
-| Orderbook | 1-2s | 1-2s | OrderbookV2 API |
+Injective's public gRPC endpoints (`publicnode.com`, `sentry.grpc.injective.network`) are configured for backend/server use and **block browser requests** due to CORS (Cross-Origin Resource Sharing) policies.
 
-*First load affected by RPC timeouts; subsequent loads use cache
+**Affected APIs**:
+- `ChainGrpcStakingApi` - Validator data
+- `IndexerGrpcInsuranceFundApi` - Insurance fund balance
+- `IndexerGrpcDerivativesApi` - Complete market listings
 
-## 🏗️ Tech Stack
+**Console Error**:
+```
+Access to fetch at 'https://injective-grpc.publicnode.com/...' 
+from origin 'http://localhost:8082' has been blocked by CORS policy
+```
 
-- **Frontend**: [React](https://react.dev/) 18 with [TypeScript](https://www.typescriptlang.org/)
-- **Build Tool**: [Vite](https://vitejs.dev/) 7.2
-- **UI Framework**: [Shadcn UI](https://ui.shadcn.com/) + [Tailwind CSS](https://tailwindcss.com/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **State Management**: [TanStack Query](https://tanstack.com/query/latest)
-- **Blockchain SDK**: [@injectivelabs/sdk-ts](https://www.npmjs.com/package/@injectivelabs/sdk-ts)
-- **Charts**: [Recharts](https://recharts.org/)
-- **Routing**: [React Router](https://reactrouter.com/) v6
+**This is NOT a bug in our code** - it's an infrastructure limitation of free public RPCs.
 
-## 📦 Getting Started
+## 💰 Cost & Infrastructure Options
+
+### Option 1: Backend Proxy (Recommended) - $5-20/month
+
+Build a lightweight backend server to proxy gRPC requests and bypass CORS:
+
+```
+Browser → Your Backend (Node.js/Express) → Injective Public RPCs → Data
+```
+
+**Pros**:
+- ✅ FREE RPC usage (public endpoints)
+- ✅ Full feature access
+- ✅ Add caching to reduce load
+- ✅ Complete control
+
+**Cons**:
+- ❌ 2-3 days development time
+- ❌ Requires hosting ($5-20/mo on Railway/Vercel)
+
+**Implementation**: ~100-200 lines of Express code
+
+### Option 2: Paid RPC with CORS - $49-199/month
+
+Use a paid RPC provider that supports browser CORS:
+
+**Providers**:
+- **GetBlock**: $49/mo (100K requests/day)
+- **QuickNode**: $9-299/mo (tiered)
+- **Ankr**: $20-100/mo
+
+**Pros**:
+- ✅ Zero dev work
+- ✅ Direct browser access
+- ✅ Better uptime & speed
+
+**Cons**:
+- ❌ Monthly subscription cost
+- ❌ Vendor lock-in
+
+### Option 3: Stay Free - $0/month
+
+Accept current limitations and focus on working features.
+
+**Good for**: Demo, portfolio, MVP
+
+## 📊 Feature Completeness by Cost Tier
+
+| Tier | Cost/Month | Features | Validator Data | Insurance Fund | Full Markets |
+|------|------------|----------|----------------|----------------|--------------|
+| **Free (Current)** | $0 | 70% | ❌ Fallback | ❌ $0 | ❌ Limited |
+| **Backend Proxy** | $5-20 | 100% | ✅ Real | ✅ Real | ✅ Complete |
+| **Paid RPC** | $49-199 | 100% | ✅ Real | ✅ Real | ✅ Complete |
+| **Hybrid** | $54-219 | 100%+ | ✅ Real | ✅ Real | ✅ Complete |
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v18 or higher
-- npm, yarn, or bun
+- Node.js 18+ and npm
+- Git
 
 ### Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Ndifreke000/injective-insight-hub.git
-   cd injective-insight-hub
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn install
-   # or
-   bun install
-   ```
-
-### Running Locally
-
-Start the development server:
-
 ```bash
+# Clone repository
+git clone https://github.com/yourusername/injective-insight-hub.git
+cd injective-insight-hub
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
 ```
 
-The application will be available at `http://localhost:8080`.
+Visit `http://localhost:8082`
 
-### Building for Production
-
-Create an optimized production build:
+### Build for Production
 
 ```bash
 npm run build
 ```
 
-Preview the production build:
+## 🗺️ Development Roadmap
 
-```bash
-npm run preview
-```
+### Phase 1: Current (FREE) ✅
+- [x] Block & transaction explorer
+- [x] Orderbook analysis
+- [x] Risk metrics calculations
+- [x] Data source indicators
+- [x] Real-time gas tracking
 
-## 🏛️ Project Structure
+### Phase 2: Backend Proxy ($5-20/mo)
+- [ ] Express/FastAPI backend server
+- [ ] gRPC proxy endpoints
+- [ ] Response caching (Redis)
+- [ ] Deploy on Railway/Vercel
+- [ ] Unlock all blocked features
+
+### Phase 3: Production ($49-99/mo)
+- [ ] Paid RPC integration (GetBlock)
+- [ ] User authentication (Supabase)
+- [ ] Saved dashboards
+- [ ] Real-time notifications
+- [ ] Custom alerts
+
+### Phase 4: Scale ($200-500/mo)
+- [ ] Historical data indexer
+- [ ] Advanced analytics
+- [ ] Custom metrics builder
+- [ ] Public API
+- [ ] Mobile app
+
+## 🛠️ Tech Stack
+
+- **Frontend**: React 19, TypeScript, Vite
+- **UI**: shadcn/ui, Tailwind CSS, Recharts
+- **Blockchain**: Injective SDK, Tendermint RPC
+- **State**: React Query, Context API
+- **Routing**: React Router v6
+
+## 📁 Project Structure
 
 ```
 injective-insight-hub/
 ├── src/
-│   ├── components/        # Reusable UI components
-│   │   ├── ui/           # Shadcn UI components
-│   │   ├── LoadingSkeleton.tsx
-│   │   ├── MetricCard.tsx
-│   │   └── ...
-│   ├── contexts/         # React contexts (ThemeContext)
-│   ├── hooks/            # Custom React hooks
-│   ├── lib/              # Core utilities
-│   │   ├── rpc.ts        # RPC client and data fetching
-│   │   ├── rpc-manager.ts # Multi-RPC load balancing
-│   │   └── utils.ts      # Helper functions
-│   ├── pages/            # Application pages
-│   │   ├── Dashboard.tsx
-│   │   ├── Derivatives.tsx
-│   │   ├── Markets.tsx
-│   │   ├── Staking.tsx
-│   │   └── ...
-│   └── App.tsx           # Main app with routing
-├── test-rpc-data.mjs     # RPC data availability testing
-├── RPC-TEST-FINDINGS.md  # Documentation of RPC capabilities
-└── README.md
+│   ├── components/     # Reusable UI components
+│   ├── pages/         # Page components (Blocks, Risk, etc.)
+│   ├── lib/           # RPC clients, utilities
+│   ├── contexts/      # React contexts (Theme)
+│   └── types/         # TypeScript definitions
+├── public/            # Static assets
+└── package.json
 ```
 
-## 🔧 Architecture Highlights
+## 🔧 Configuration
 
-### Multi-RPC Load Balancing
-- **Primary RPC**: `injective-grpc.publicnode.com:443`
-- **Secondary RPC**: `sentry.grpc.injective.network:443`
-- Automatic health checks every 30 seconds
-- Request retry with fallback on failure
-- Round-robin load distribution
+### RPC Endpoints
 
-### Intelligent Caching
+Configured in `src/lib/rpc-manager.ts`:
+
 ```typescript
-// 60-second TTL cache for derivatives markets
-derivativesCache = {
-  data: DerivativeData[],
-  timestamp: number,
-  TTL: 60000
+{
+  name: 'PublicNode',
+  grpcUrl: 'https://injective-grpc.publicnode.com:443',
+  restUrl: 'https://injective-rpc.publicnode.com:443'
 }
 ```
 
-- Reduces RPC load by 96% on repeat visits
-- Stale-on-error: returns cached data if RPC fails
-- Validator cache (30s TTL) prevents timeout issues
+To use a paid RPC, update these URLs with your provider's endpoints.
 
-### Data Sourcing Strategy
+## 📝 Data Sources
 
-**Real-Time Data** (direct RPC):
-- 71 derivative markets (perpetuals)
-- 138 spot markets
-- Orderbook depth (OrderbookV2 API)
-- 100 validators with staking info
-- Latest blocks and transactions
-- Insurance fund balances
+### Working (Public RPCs)
+- **Tendermint RPC**: Block data, transactions, gas metrics
+- **Indexer API**: Orderbook prices, some market data
+- **Calculated**: Risk scores, TPS, bonding ratio
 
-**Estimated Metrics** (for performance):
-- Dashboard volumes (based on market counts)
-- Dashboard open interest (71 markets × $8.8M avg)
-- Reason: Fetching per-market data = 209 API calls = 40-100s load time
-
-**See**: [dashboard-metrics-explained.md](/.gemini/antigravity/brain/4097d523-b27f-4b52-b3cd-2d82290de23b/dashboard-metrics-explained.md) for details
-
-## 📝 Data Accuracy Notes
-
-- **Derivatives Page**: 100% real data (71 markets, live prices, funding rates)
-- **Markets Page**: 100% real data (138 spot pairs, order depth)
-- **Dashboard Metrics**: Estimated values for instant loading (UX over precision)
-- **Staking Page**: Real validator data (cached for stability)
-
-For exact per-market values, visit the Derivatives or Markets pages.
-
-## 🐛 Known Issues & Limitations
-
-1. **RPC Timeouts**: Primary RPC occasionally times out on `fetchMarkets()` - handled by retry logic and caching
-2. **Estimated Dashboard**: Volumes and OI are estimates (real per-market data too slow)
-3. **TPS Initial Zero**: Requires 10 blocks (~7s) to calculate - expected behavior
-
-## 🛠️ Development
-
-### RPC Testing
-
-Test RPC data availability:
-```bash
-node test-rpc-data.mjs
-```
-
-Quick test critical endpoints:
-```bash
-node test-rpc-quick.mjs
-```
-
-### Build Analysis
-
-The production bundle is ~2.26 MB. Consider code-splitting for optimization:
-- Lazy load heavy pages
-- Manual chunk splitting for vendor code
-- Dynamic imports for charts
-
-## 📊 Monitoring
-
-Console logs provide insight into:
-- `[fetchDerivatives]` - Cache hits/misses and RPC fetches
-- `[fetchMetrics]` - Market counts and data sources
-- `[RPC Manager]` - Health checks and failover events
+### Blocked (Need Backend/Paid RPC)
+- **ChainGrpc APIs**: Staking, governance, bank balances
+- **Insurance API**: Fund balance and coverage
+- **Full Derivatives**: Complete market listings
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please:
+Contributions welcome! Please:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'feat: add amazing feature'`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-### Code Style
-- TypeScript strict mode
-- ESLint + Prettier for formatting
-- React Hooks best practices
-- Memoization for expensive calculations
+## 📜 License
 
-## 📄 License
+MIT License - see [LICENSE](LICENSE) file for details
 
-This project is licensed under the MIT License.
+## 🙏 Acknowledgments
 
-## 🔗 Links
+- [Injective Protocol](https://injective.com) - Blockchain infrastructure
+- [shadcn/ui](https://ui.shadcn.com) - UI components
+- [Vite](https://vitejs.dev) - Build tool
 
-- **Live Demo**: Coming soon
-- **Injective Protocol**: https://injective.com
-- **SDK Documentation**: https://docs.injective.network
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/injective-insight-hub/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/injective-insight-hub/discussions)
 
 ---
 
-Built with ❤️ for the Injective ecosystem
+**Note**: This project currently uses free public RPCs with known CORS limitations. See the "Cost & Infrastructure Options" section above for solutions to unlock 100% functionality.

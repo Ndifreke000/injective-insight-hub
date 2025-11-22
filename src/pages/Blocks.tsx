@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchLatestBlock, fetchMetrics, BlockData, MetricsData } from "@/lib/rpc";
 import { Box, Clock, Zap, Activity, Hash } from "lucide-react";
+import { ExportButton } from "@/components/ExportButton";
 import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
+import { DataSourceIndicator } from "@/components/DataSourceIndicator";
 import {
   Table,
   TableBody,
@@ -16,7 +18,8 @@ import {
 export default function Blocks() {
   const [latestBlock, setLatestBlock] = useState<BlockData | null>(null);
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
-  const [recentBlocks, setRecentBlocks] = useState<BlockData[]>([]);
+  const [blocks, setBlocks] = useState<BlockData[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   useEffect(() => {
     const loadData = async () => {
@@ -73,10 +76,11 @@ export default function Blocks() {
           console.error(`Error fetching block ${currentHeight - i}:`, error);
         }
       }
-      setRecentBlocks(blocks);
+      setBlocks(blocks);
     };
 
     loadData();
+    setLastUpdated(new Date());
   }, []);
 
   if (!latestBlock || !metrics) {
@@ -88,6 +92,14 @@ export default function Blocks() {
       <div>
         <h1 className="text-3xl font-bold mb-2">Block & Transaction Analysis</h1>
         <p className="text-muted-foreground">Real-time blockchain activity monitoring · <span className="font-semibold text-primary">Injective Network</span></p>
+        <div className="flex justify-end">
+          <ExportButton data={{ latestBlock, metrics, recentBlocks: blocks }} filename="blocks-data" />
+        </div>
+
+        <DataSourceIndicator
+          lastUpdated={lastUpdated}
+          source={`${metrics?.activeValidators || 0} Validators • TPS from ${blocks.length} Blocks`}
+        />
       </div>
 
       {/* Key Metrics */}
