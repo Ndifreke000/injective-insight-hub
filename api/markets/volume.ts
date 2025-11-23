@@ -1,6 +1,6 @@
 // 24h volume endpoint
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { calculate24hVolume } from '../_lib/injective-simple';
+import { calculate24hVolume } from '../_lib/injective-simple.js';
 
 export default async function handler(
     req: VercelRequest,

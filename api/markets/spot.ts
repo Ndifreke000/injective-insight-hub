@@ -1,6 +1,6 @@
 // Spot markets endpoint
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { fetchSpotMarkets } from '../_lib/injective-simple';
+import { fetchSpotMarkets } from '../_lib/injective-simple.js';
 
 export default async function handler(
     req: VercelRequest,

@@ -1,6 +1,6 @@
 // INJ price endpoint for Vercel
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { fetchINJPrice } from '../_lib/coingecko';
+import { fetchINJPrice } from '../_lib/coingecko.js';
 
 export default async function handler(
     req: VercelRequest,

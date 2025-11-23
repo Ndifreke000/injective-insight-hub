@@ -1,6 +1,6 @@
 // Validators endpoint for Vercel
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { fetchValidators } from './_lib/injective-simple';
+import { fetchValidators } from './_lib/injective-simple.js';
 
 export default async function handler(
     req: VercelRequest,

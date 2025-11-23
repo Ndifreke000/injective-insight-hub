@@ -1,6 +1,6 @@
 // Insurance fund endpoint for Vercel
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { fetchInsuranceFunds } from './_lib/injective-simple';
+import { fetchInsuranceFunds } from './_lib/injective-simple.js';
 
 export default async function handler(
     req: VercelRequest,

@@ -1,6 +1,6 @@
 // Open interest endpoint
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { calculateOpenInterest } from '../_lib/injective-simple';
+import { calculateOpenInterest } from '../_lib/injective-simple.js';
 
 export default async function handler(
     req: VercelRequest,

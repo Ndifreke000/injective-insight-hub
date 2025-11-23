@@ -1,6 +1,6 @@
 // Derivative markets endpoint
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { fetchDerivativeMarkets } from '../_lib/injective-simple';
+import { fetchDerivativeMarkets } from '../_lib/injective-simple.js';
 
 export default async function handler(
     req: VercelRequest,
