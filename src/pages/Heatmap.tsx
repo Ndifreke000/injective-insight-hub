@@ -6,6 +6,7 @@ import { Activity, AlertTriangle } from "lucide-react";
 import { DataFilters } from "@/components/DataFilters";
 import { ExportButton } from "@/components/ExportButton";
 import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
+import { LiquidationHeatmap } from "@/components/LiquidationHeatmap";
 
 export default function Heatmap() {
   const [riskMetrics, setRiskMetrics] = useState<RiskMetric[]>([]);
@@ -50,6 +51,15 @@ export default function Heatmap() {
         onSearchChange={setSearchQuery}
         showDateRange={false}
       />
+
+      <DataFilters
+        searchPlaceholder="Search risk categories..."
+        onSearchChange={setSearchQuery}
+        showDateRange={false}
+      />
+
+      {/* Liquidation Heatmap - The Killer Feature */}
+      <LiquidationHeatmap />
 
       {/* Overall Risk Status */}
       <Card>
@@ -109,8 +119,8 @@ export default function Heatmap() {
                       <div className="h-2 bg-secondary rounded-full overflow-hidden">
                         <div
                           className={`h-full transition-all ${metric.level === "high" ? "bg-destructive" :
-                              metric.level === "medium" ? "bg-warning" :
-                                "bg-success"
+                            metric.level === "medium" ? "bg-warning" :
+                              "bg-success"
                             }`}
                           style={{ width: `${metric.score}%` }}
                         />

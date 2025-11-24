@@ -1,0 +1,45 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Historical metrics for tracking trends over time
+model HistoricalMetric {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime @default(now())
+  type      String   // "insurance_fund", "volume_24h", "open_interest", "validators"
+  value     Float
+  metadata  String?  // JSON string for extra details
+  
+  @@index([type, timestamp])
+}
+
+// Liquidation snapshots for tracking liquidation clusters over time
+model LiquidationSnapshot {
+  id              Int      @id @default(autoincrement())
+  timestamp       DateTime @default(now())
+  marketTicker    String   // e.g., "INJ/USDT PERP"
+  totalVolume     Float    // Total liquidation volume at risk
+  bucketCount     Int      // Number of price levels with liquidations
+  criticalClusters Int     // Number of high-risk clusters
+  data            String   // JSON string of full heatmap data
+  
+  @@index([marketTicker, timestamp])
+}
+
+// Price snapshots for tracking INJ price over time
+model PriceSnapshot {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime @default(now())
+  priceUSD  Float
+  marketCap Float?
+  volume24h Float?
+  
+  @@index([timestamp])
+}

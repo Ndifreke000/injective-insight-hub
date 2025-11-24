@@ -10,7 +10,9 @@ import {
     fetchSpotMarkets,
     calculate24hVolume,
     calculateOpenInterest,
+    fetchPositions,
 } from './services/injective.js';
+import { fetchWhaleActivities } from './services/whales.js';
 
 const app = express();
 
@@ -224,6 +226,80 @@ app.get('/api/markets/open-interest', async (req: Request, res: Response) => {
     }
 });
 
+/**
+ * GET /api/markets/liquidations
+ * Get liquidation heatmap data
+ */
+app.get('/api/markets/liquidations', async (req: Request, res: Response) => {
+    try {
+        const positions = await fetchPositions();
+
+        const buckets: Record<string, { price: number; volume: number; count: number }> = {};
+        let totalLiquidationVolume = 0;
+
+        positions.forEach((position: any) => {
+            const liquidationPrice = parseFloat(position.liquidationPrice || '0');
+            const quantity = parseFloat(position.quantity || '0');
+            const markPrice = parseFloat(position.markPrice || '0');
+
+            if (liquidationPrice <= 0 || quantity <= 0) return;
+
+            const volume = quantity * markPrice;
+            totalLiquidationVolume += volume;
+
+            const bucketPrice = Math.round(liquidationPrice * 10) / 10;
+
+            if (!buckets[bucketPrice]) {
+                buckets[bucketPrice] = { price: bucketPrice, volume: 0, count: 0 };
+            }
+
+            buckets[bucketPrice].volume += volume;
+            buckets[bucketPrice].count += 1;
+        });
+
+        const heatmapData = Object.values(buckets)
+            .sort((a, b) => a.price - b.price)
+            .filter(b => b.volume > 1000);
+
+        res.json({
+            success: true,
+            data: {
+                ticker: 'INJ/USDT PERP',
+                totalVolume: totalLiquidationVolume,
+                buckets: heatmapData,
+                updatedAt: Date.now()
+            }
+        });
+    } catch (error) {
+        console.error('[API] Error generating heatmap:', error);
+        res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+
+        /**
+         * GET /api/whales/activity
+         * Get whale wallet activity
+         */
+        app.get('/api/whales/activity', async (req: Request, res: Response) => {
+            try {
+                const data = await fetchWhaleActivities();
+
+                res.json({
+                    success: true,
+                    data
+                });
+            } catch (error) {
+                console.error('[API] Error fetching whale activity:', error);
+                res.status(500).json({
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                });
+            }
+        });
+    }
+});
+
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     console.error('[ERROR]', err);
@@ -266,6 +342,8 @@ app.listen(config.port, () => {
     console.log('  GET  /api/markets/spot            - Spot markets');
     console.log('  GET  /api/markets/volume          - Real 24h volume');
     console.log('  GET  /api/markets/open-interest   - Real open interest');
+    console.log('  GET  /api/markets/liquidations    - Liquidation heatmap');
+    console.log('  GET  /api/whales/activity         - Whale wallet tracking');
     console.log('='.repeat(60));
     console.log('');
 });

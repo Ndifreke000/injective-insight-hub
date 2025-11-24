@@ -259,3 +259,42 @@ export async function calculateOpenInterest() {
         config.rpcCacheTtl
     );
 }
+
+/**
+ * Fetch open positions for a market
+ */
+export async function fetchPositions(marketId?: string) {
+    return cacheWrapper(
+        rpcCache,
+        `positions-${marketId || 'default'}`,
+        async () => {
+            console.log('[RPC] Fetching positions...');
+
+            // If no marketId provided, try to find INJ/USDT PERP
+            if (!marketId) {
+                const markets = await fetchDerivativeMarkets();
+                const injMarket = markets.find((m: any) => m.ticker === 'INJ/USDT PERP' && m.isPerpetual);
+                if (injMarket) {
+                    marketId = injMarket.marketId;
+                }
+            }
+
+            if (!marketId) {
+                console.warn('[RPC] Market ID not found, defaulting to empty list');
+                return [];
+            }
+
+            try {
+                const positions = await derivativesApi.fetchPositions({ marketId });
+                const positionsArray = Array.isArray(positions) ? positions : (positions as any).positions || [];
+                console.log(`[RPC] ✓ Fetched ${positionsArray.length} positions for ${marketId}`);
+                return positionsArray;
+            } catch (error) {
+                console.error('[RPC] Error fetching positions:', error);
+                return [];
+            }
+        },
+        5000 // 5 second cache for positions
+    );
+}
+
