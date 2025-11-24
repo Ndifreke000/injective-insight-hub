@@ -105,6 +105,34 @@ export async function fetchSpotMarketsFromBackend(): Promise<any[]> {
     return fetchFromBackend<any[]>('/api/markets/spot');
 }
 
+export interface DerivativeMarket {
+    ticker: string;
+    marketId: string;
+    baseToken: {
+        name: string;
+        symbol: string;
+        decimals: number;
+    };
+    quoteToken: {
+        name: string;
+        symbol: string;
+        decimals: number;
+    };
+    initialMarginRatio: string;
+    maintenanceMarginRatio: string;
+    quoteDenom: string;
+    makerFee: string;
+    takerFee: string;
+    isPerpetual: boolean;
+}
+
+/**
+ * Fetch derivative markets from backend
+ */
+export async function fetchDerivativesFromBackend(): Promise<DerivativeMarket[]> {
+    return fetchFromBackend<DerivativeMarket[]>('/api/markets/derivatives');
+}
+
 export interface VolumeData {
     derivative: string;
     spot: string;

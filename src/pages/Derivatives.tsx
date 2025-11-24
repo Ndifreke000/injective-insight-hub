@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
-import { fetchDerivatives, DerivativeData } from "@/lib/rpc";
+import { fetchDerivativesFromBackend } from "@/lib/backend-api";
 import { PieChart, TrendingUp, DollarSign, Activity } from "lucide-react";
 import { ExportButton } from "@/components/ExportButton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -16,6 +16,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+// Derivative data interface for frontend
+interface DerivativeData {
+  market: string;
+  openInterest: string;
+  fundingRate: string;
+  markPrice: string;
+  oraclePrice: string;
+  leverage: string;
+}
+
 export default function Derivatives() {
   const [derivatives, setDerivatives] = useState<DerivativeData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,10 +34,26 @@ export default function Derivatives() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await fetchDerivatives();
-        setDerivatives(data);
+        console.log('[Derivatives] Fetching from backend API...');
+        const markets = await fetchDerivativesFromBackend();
+        console.log(`[Derivatives] Received ${markets.length} markets from backend`);
+
+        // Transform backend data to DerivativeData format
+        const transformedData: DerivativeData[] = markets.map(market => ({
+          market: market.ticker || "Unknown",
+          openInterest: "0", // Backend doesn't provide this yet
+          fundingRate: "0.0001", // Placeholder
+          markPrice: "0",
+          oraclePrice: "0",
+          leverage: market.initialMarginRatio
+            ? (1 / parseFloat(market.initialMarginRatio)).toFixed(1)
+            : "10.0"
+        }));
+
+        setDerivatives(transformedData);
       } catch (error) {
-        console.error("Error loading derivatives:", error);
+        console.error("Error loading derivatives from backend:", error);
+        // Keep existing data if refresh fails
       } finally {
         setLoading(false);
       }
