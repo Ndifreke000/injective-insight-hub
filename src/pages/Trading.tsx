@@ -16,6 +16,10 @@ export default function Trading() {
     };
 
     loadData();
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   if (!metrics) {
