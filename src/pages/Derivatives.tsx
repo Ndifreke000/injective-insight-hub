@@ -19,15 +19,25 @@ import {
 export default function Derivatives() {
   const [derivatives, setDerivatives] = useState<DerivativeData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
-      const data = await fetchDerivatives();
-      setDerivatives(data);
+      try {
+        const data = await fetchDerivatives();
+        setDerivatives(data);
+      } catch (error) {
+        console.error("Error loading derivatives:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadData();
-    // Auto-refresh removed for better performance
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // CRITICAL: All hooks must be called BEFORE any conditional returns
@@ -51,7 +61,7 @@ export default function Derivatives() {
   }, [filteredDerivatives]);
 
   // Loading state check AFTER all hooks
-  if (derivatives.length === 0) {
+  if (loading) {
     return <PageLoadingSkeleton />;
   }
 

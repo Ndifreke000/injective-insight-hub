@@ -21,18 +21,29 @@ export default function Markets() {
   const [spotMarkets, setSpotMarkets] = useState<OrderbookData[]>([]);
   const [perpMarkets, setPerpMarkets] = useState<DerivativeData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
-      const [spot, perp] = await Promise.all([
-        fetchOrderbooks(),
-        fetchDerivatives(),
-      ]);
-      setSpotMarkets(spot);
-      setPerpMarkets(perp);
+      try {
+        const [spot, perp] = await Promise.all([
+          fetchOrderbooks(),
+          fetchDerivatives(),
+        ]);
+        setSpotMarkets(spot);
+        setPerpMarkets(perp);
+      } catch (error) {
+        console.error("Error loading markets:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadData();
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const filteredSpotMarkets = useMemo(() => {
@@ -47,7 +58,7 @@ export default function Markets() {
     );
   }, [perpMarkets, searchQuery]);
 
-  if (spotMarkets.length === 0 || perpMarkets.length === 0) {
+  if (loading) {
     return <PageLoadingSkeleton />;
   }
 
@@ -141,8 +152,8 @@ export default function Markets() {
                               <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden max-w-[100px]">
                                 <div
                                   className={`h-full ${liquidityScore > 90 ? "bg-success" :
-                                      liquidityScore > 80 ? "bg-warning" :
-                                        "bg-destructive"
+                                    liquidityScore > 80 ? "bg-warning" :
+                                      "bg-destructive"
                                     }`}
                                   style={{ width: `${liquidityScore}%` }}
                                 />
