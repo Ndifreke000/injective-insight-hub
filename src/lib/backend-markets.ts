@@ -1,4 +1,4 @@
-// Add this function to backend-api.ts to fetch derivatives from backend
+import { fetchFromBackend } from "./backend-api";
 
 export interface DerivativeMarket {
     ticker: string;

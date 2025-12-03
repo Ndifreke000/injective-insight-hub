@@ -54,9 +54,7 @@ export function WhaleActivity() {
         };
 
         fetchData();
-        // Refresh every 60 seconds
-        const interval = setInterval(fetchData, 60000);
-        return () => clearInterval(interval);
+        // No auto-refresh per user request
     }, []);
 
     if (loading) {

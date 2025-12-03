@@ -20,72 +20,96 @@ export default function Blocks() {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [blocks, setBlocks] = useState<BlockData[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
-      const [blockData, metricsData] = await Promise.all([
-        fetchLatestBlock(),
-        fetchMetrics(),
-      ]);
-      setLatestBlock(blockData);
-      setMetrics(metricsData);
+      try {
+        // Fetch latest block and metrics with individual error handling
+        const [blockData, metricsData] = await Promise.all([
+          fetchLatestBlock().catch(e => {
+            console.error("Failed to fetch block:", e);
+            return null;
+          }),
+          fetchMetrics().catch(e => {
+            console.error("Failed to fetch metrics:", e);
+            return null;
+          }),
+        ]);
+        
+        if (blockData) setLatestBlock(blockData);
+        if (metricsData) setMetrics(metricsData);
 
-      // Fetch recent blocks with different heights
-      const blocks: BlockData[] = [blockData];
-      const currentHeight = parseInt(blockData.height);
-
-      // Fetch previous 9 blocks with gas data
-      const injPrice = 5.30; // Current INJ price
-      const INJECTIVE_BLOCK_GAS_LIMIT = 50_000_000;
-      const INJECTIVE_GAS_PRICE = 160_000_000;
-      const INJ_DECIMALS = 1e18;
-
-      for (let i = 1; i < 10; i++) {
-        try {
-          const [blockResponse, resultsResponse] = await Promise.all([
-            fetch(`https://sentry.tm.injective.network:443/block?height=${currentHeight - i}`),
-            fetch(`https://sentry.tm.injective.network:443/block_results?height=${currentHeight - i}`)
-          ]);
-
-          const blockData = await blockResponse.json();
-          const resultsData = await resultsResponse.json();
-
-          // Calculate total gas used
-          const txsResults = resultsData.result?.txs_results || [];
-          const totalGasUsed = txsResults.reduce((sum: number, tx: any) => {
-            return sum + parseInt(tx.gas_used || "0");
-          }, 0);
-
-          // Calculate gas metrics
-          const gasPercentage = parseFloat(((totalGasUsed / INJECTIVE_BLOCK_GAS_LIMIT) * 100).toFixed(2));
-          const feeINJ = ((totalGasUsed * INJECTIVE_GAS_PRICE) / INJ_DECIMALS).toFixed(6);
-          const feeUSDT = (parseFloat(feeINJ) * injPrice).toFixed(4);
-
-          blocks.push({
-            height: blockData.result?.block?.header?.height || "0",
-            hash: blockData.result?.block_id?.hash || "",
-            timestamp: blockData.result?.block?.header?.time || new Date().toISOString(),
-            validator: blockData.result?.block?.header?.proposer_address || "",
-            txCount: blockData.result?.block?.data?.txs?.length || 0,
-            gasUsed: totalGasUsed.toString(),
-            gasPercentage: gasPercentage,
-            gasFeeINJ: feeINJ,
-            gasFeeUSDT: feeUSDT,
-          });
-        } catch (error) {
-          console.error(`Error fetching block ${currentHeight - i}:`, error);
+        const currentHeight = blockData ? parseInt(blockData.height) : 0;
+        if (!currentHeight) {
+          if (blockData) setBlocks([blockData]);
+          setLoading(false);
+          return;
         }
+
+        // Fetch previous 9 blocks in PARALLEL with short timeout
+        const injPrice = 5.30;
+        const INJECTIVE_BLOCK_GAS_LIMIT = 50_000_000;
+        const INJECTIVE_GAS_PRICE = 160_000_000;
+        const INJ_DECIMALS = 1e18;
+
+        const blockPromises = Array.from({ length: 9 }, (_, i) => {
+          const height = currentHeight - (i + 1);
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 5000);
+          
+          return Promise.all([
+            fetch(`https://sentry.tm.injective.network:443/block?height=${height}`, { signal: controller.signal })
+              .then(r => r.json()).catch(() => null),
+            fetch(`https://sentry.tm.injective.network:443/block_results?height=${height}`, { signal: controller.signal })
+              .then(r => r.json()).catch(() => null)
+          ]).then(([blockRes, resultsRes]) => {
+            clearTimeout(timeout);
+            if (!blockRes?.result) return null;
+            
+            const txsResults = resultsRes?.result?.txs_results || [];
+            const totalGasUsed = txsResults.reduce((sum: number, tx: any) => sum + parseInt(tx.gas_used || "0"), 0);
+            const gasPercentage = parseFloat(((totalGasUsed / INJECTIVE_BLOCK_GAS_LIMIT) * 100).toFixed(2));
+            const feeINJ = ((totalGasUsed * INJECTIVE_GAS_PRICE) / INJ_DECIMALS).toFixed(6);
+            const feeUSDT = (parseFloat(feeINJ) * injPrice).toFixed(4);
+
+            return {
+              height: blockRes.result?.block?.header?.height || "0",
+              hash: blockRes.result?.block_id?.hash || "",
+              timestamp: blockRes.result?.block?.header?.time || new Date().toISOString(),
+              validator: blockRes.result?.block?.header?.proposer_address || "",
+              txCount: blockRes.result?.block?.data?.txs?.length || 0,
+              gasUsed: totalGasUsed.toString(),
+              gasPercentage,
+              gasFeeINJ: feeINJ,
+              gasFeeUSDT: feeUSDT,
+            };
+          }).catch(() => null);
+        });
+
+        const fetchedBlocks = await Promise.all(blockPromises);
+        const validBlocks = blockData 
+          ? [blockData, ...fetchedBlocks.filter((b): b is BlockData => b !== null)]
+          : fetchedBlocks.filter((b): b is BlockData => b !== null);
+        setBlocks(validBlocks);
+      } catch (error) {
+        console.error("Error loading blocks:", error);
+      } finally {
+        setLoading(false);
       }
-      setBlocks(blocks);
     };
 
     loadData();
     setLastUpdated(new Date());
   }, []);
 
-  if (!latestBlock || !metrics) {
+  if (loading) {
     return <PageLoadingSkeleton />;
   }
+
+  // Use defaults if data failed to load
+  const displayBlock = latestBlock || { height: "0", hash: "", timestamp: new Date().toISOString(), validator: "", txCount: 0, gasUsed: "0" };
+  const displayMetrics = metrics || { blockHeight: 0, totalTransactions: 0, activeValidators: 100, tps: 0, avgBlockTime: 0.7, totalStaked: "0", openInterest: "0", insuranceFund: "0", spotVolume24h: "0", derivativesVolume24h: "0" };
 
   return (
     <div className="space-y-6">
@@ -93,12 +117,12 @@ export default function Blocks() {
         <h1 className="text-3xl font-bold mb-2">Block & Transaction Analysis</h1>
         <p className="text-muted-foreground">Real-time blockchain activity monitoring · <span className="font-semibold text-primary">Injective Network</span></p>
         <div className="flex justify-end">
-          <ExportButton data={{ latestBlock, metrics, recentBlocks: blocks }} filename="blocks-data" />
+          <ExportButton data={{ latestBlock: displayBlock, metrics: displayMetrics, recentBlocks: blocks }} filename="blocks-data" />
         </div>
 
         <DataSourceIndicator
           lastUpdated={lastUpdated}
-          source={`${metrics?.activeValidators || 0} Validators • TPS from ${blocks.length} Blocks`}
+          source={`${displayMetrics.activeValidators} Validators • TPS from ${blocks.length} Blocks`}
         />
       </div>
 
@@ -106,30 +130,30 @@ export default function Blocks() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Latest Block Height"
-          value={latestBlock.height}
+          value={displayBlock.height}
           icon={Box}
           change="Live"
           trend="neutral"
         />
         <MetricCard
           title="Block Production Speed"
-          value={`${metrics.avgBlockTime.toFixed(2)}s`}
+          value={`${displayMetrics.avgBlockTime.toFixed(2)}s`}
           icon={Clock}
           change="Average time"
           trend="up"
         />
         <MetricCard
           title="Transaction Throughput"
-          value={`${metrics.tps} TPS`}
+          value={`${displayMetrics.tps} TPS`}
           icon={Zap}
-          change={`${metrics.totalTransactions.toLocaleString()} recent txs`}
+          change={`${displayMetrics.totalTransactions.toLocaleString()} recent txs`}
           trend="up"
         />
         <MetricCard
           title="Gas Usage (Injective)"
-          value={latestBlock.gasPercentage ? `${latestBlock.gasPercentage}%` : "0%"}
+          value={displayBlock.gasPercentage ? `${displayBlock.gasPercentage}%` : "0%"}
           icon={Activity}
-          change={latestBlock.gasFeeUSDT ? `~$${latestBlock.gasFeeUSDT} (${latestBlock.gasFeeINJ} INJ)` : "Current block"}
+          change={displayBlock.gasFeeUSDT ? `~$${displayBlock.gasFeeUSDT} (${displayBlock.gasFeeINJ} INJ)` : "Current block"}
           trend="neutral"
         />
       </div>
@@ -146,19 +170,19 @@ export default function Blocks() {
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <div className="text-sm text-muted-foreground mb-1">Block Hash</div>
-              <div className="text-sm font-mono break-all">{latestBlock.hash}</div>
+              <div className="text-sm font-mono break-all">{displayBlock.hash}</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">Validator</div>
-              <div className="text-sm font-mono">{latestBlock.validator}</div>
+              <div className="text-sm font-mono">{displayBlock.validator}</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">Timestamp</div>
-              <div className="text-sm">{new Date(latestBlock.timestamp).toLocaleString()}</div>
+              <div className="text-sm">{new Date(displayBlock.timestamp).toLocaleString()}</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">Transaction Count</div>
-              <div className="text-sm font-bold">{latestBlock.txCount}</div>
+              <div className="text-sm font-bold">{displayBlock.txCount}</div>
             </div>
           </div>
         </CardContent>
@@ -184,7 +208,7 @@ export default function Blocks() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentBlocks.map((block, index) => (
+              {blocks.map((block, index) => (
                   <TableRow key={index}>
                     <TableCell className="font-medium">{block.height}</TableCell>
                     <TableCell className="font-mono text-xs">{block.hash.substring(0, 16)}...</TableCell>
@@ -193,7 +217,7 @@ export default function Blocks() {
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-semibold">{block.gasPercentage ? `${block.gasPercentage}%` : '0%'}</span>
-                        <span className="text-xs text-muted-foreground">{parseInt(block.gasUsed).toLocaleString()} gas</span>
+                        <span className="text-xs text-muted-foreground">{parseInt(block.gasUsed || "0").toLocaleString()} gas</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -222,7 +246,7 @@ export default function Blocks() {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Active Validators</span>
-              <span className="text-2xl font-bold">{metrics.activeValidators}</span>
+              <span className="text-2xl font-bold">{displayMetrics.activeValidators}</span>
             </div>
             <div className="h-2 bg-secondary rounded-full overflow-hidden">
               <div className="h-full bg-success" style={{ width: "95%" }} />

@@ -14,7 +14,7 @@ export interface BackendResponse<T> {
 /**
  * Generic fetch wrapper with error handling
  */
-async function fetchFromBackend<T>(endpoint: string): Promise<T> {
+export async function fetchFromBackend<T>(endpoint: string): Promise<T> {
     try {
         const response = await fetch(`${BACKEND_URL}${endpoint}`);
 
