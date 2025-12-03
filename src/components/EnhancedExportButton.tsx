@@ -19,15 +19,20 @@ interface EnhancedExportButtonProps {
   label?: string;
 }
 
-export function EnhancedExportButton({ 
-  data, 
-  filename, 
+export function EnhancedExportButton({
+  data,
+  filename,
   exportType,
-  label = "Export" 
+  label = "Export"
 }: EnhancedExportButtonProps) {
   const [saving, setSaving] = useState(false);
 
   const saveToDatabase = async () => {
+    if (!supabase) {
+      toast.error("Database not configured. Please set up Supabase environment variables.");
+      return;
+    }
+
     setSaving(true);
     try {
       const { error } = await supabase
@@ -35,8 +40,8 @@ export function EnhancedExportButton({
         .insert({
           export_type: exportType,
           data: Array.isArray(data) ? data : [data],
-          metadata: { 
-            filename, 
+          metadata: {
+            filename,
             exported_at: new Date().toISOString(),
             record_count: Array.isArray(data) ? data.length : 1
           }
@@ -53,6 +58,11 @@ export function EnhancedExportButton({
   };
 
   const downloadFromDatabase = async () => {
+    if (!supabase) {
+      toast.error("Database not configured. Please set up Supabase environment variables.");
+      return;
+    }
+
     try {
       const { data: exports, error } = await supabase
         .from('data_exports')
@@ -63,7 +73,7 @@ export function EnhancedExportButton({
         .maybeSingle();
 
       if (error) throw error;
-      
+
       if (!exports) {
         toast.error("No saved data found. Save data first.");
         return;
@@ -96,15 +106,19 @@ export function EnhancedExportButton({
           <FileDown className="h-4 w-4 mr-2" />
           Export as JSON
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={saveToDatabase}>
-          <Database className="h-4 w-4 mr-2" />
-          Save to Database
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={downloadFromDatabase}>
-          <Download className="h-4 w-4 mr-2" />
-          Download Saved Data
-        </DropdownMenuItem>
+        {supabase && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={saveToDatabase}>
+              <Database className="h-4 w-4 mr-2" />
+              Save to Database
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={downloadFromDatabase}>
+              <Download className="h-4 w-4 mr-2" />
+              Download Saved Data
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
