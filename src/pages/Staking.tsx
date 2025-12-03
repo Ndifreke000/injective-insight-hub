@@ -1,45 +1,88 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchMetrics, MetricsData } from "@/lib/rpc";
 import { Coins, Users, Shield } from "lucide-react";
 import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
 import { DataSourceIndicator } from "@/components/DataSourceIndicator";
+import { RefreshButton } from "@/components/RefreshButton";
+import { ErrorState } from "@/components/ErrorState";
+import { EnhancedExportButton } from "@/components/EnhancedExportButton";
 
 export default function Staking() {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadData = async () => {
+  const loadData = useCallback(async () => {
+    setError(null);
+    try {
       const data = await fetchMetrics();
       setMetrics(data);
       setLastUpdated(new Date());
-    };
-
-    loadData();
-    // No auto-refresh - removed per user request
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load staking data");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  if (!metrics) {
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  if (loading && !metrics) {
     return <PageLoadingSkeleton />;
+  }
+
+  if (error && !metrics) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Staking</h1>
+        <ErrorState message={error} onRetry={loadData} />
+      </div>
+    );
   }
 
   // Calculate bonding ratio (assuming 100M total supply as standard for Injective)
   const totalSupply = 100000000; // 100M INJ
-  const stakedINJ = parseFloat(metrics.totalStaked);
+  const stakedINJ = parseFloat(metrics?.totalStaked || "0");
   const bondingRatio = ((stakedINJ / totalSupply) * 100).toFixed(1);
+
+  const exportData = {
+    totalStaked: stakedINJ,
+    activeValidators: metrics?.activeValidators,
+    bondingRatio,
+    lastUpdated: lastUpdated.toISOString(),
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Staking</h1>
-        <p className="text-muted-foreground">Network staking metrics and validator information</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Staking</h1>
+          <p className="text-muted-foreground">Network staking metrics and validator information</p>
+        </div>
+        <div className="flex gap-2">
+          <RefreshButton onRefresh={loadData} />
+          <EnhancedExportButton 
+            data={exportData} 
+            filename="staking-data" 
+            exportType="staking"
+          />
+        </div>
       </div>
+
+      {error && (
+        <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">
+          Warning: {error} - Showing cached data
+        </div>
+      )}
 
       <DataSourceIndicator
         lastUpdated={lastUpdated}
-        source={`${metrics.activeValidators} Validators • ${bondingRatio}% Bonded`}
+        source={`${metrics?.activeValidators || 0} Validators • ${bondingRatio}% Bonded`}
       />
 
       {/* Key Metrics - RPC Data Only */}
@@ -53,7 +96,7 @@ export default function Staking() {
         />
         <MetricCard
           title="Active Validators"
-          value={metrics.activeValidators}
+          value={metrics?.activeValidators || 0}
           icon={Users}
           change="Network security"
           trend="neutral"
@@ -99,7 +142,7 @@ export default function Staking() {
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Active Validators</div>
                 <div className="text-2xl font-bold">
-                  {metrics.activeValidators}
+                  {metrics?.activeValidators || 0}
                 </div>
               </div>
               <div>
