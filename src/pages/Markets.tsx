@@ -1,10 +1,12 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchOrderbooks, fetchDerivatives, OrderbookData, DerivativeData } from "@/lib/rpc";
 import { Building2, TrendingUp, PieChart, Activity } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ExportButton } from "@/components/ExportButton";
+import { EnhancedExportButton } from "@/components/EnhancedExportButton";
+import { RefreshButton } from "@/components/RefreshButton";
+import { ErrorState } from "@/components/ErrorState";
 import { DataFilters } from "@/components/DataFilters";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
@@ -22,26 +24,27 @@ export default function Markets() {
   const [perpMarkets, setPerpMarkets] = useState<DerivativeData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setError(null);
+    try {
+      const [spot, perp] = await Promise.all([
+        fetchOrderbooks(),
+        fetchDerivatives(),
+      ]);
+      setSpotMarkets(spot);
+      setPerpMarkets(perp);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load markets");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [spot, perp] = await Promise.all([
-          fetchOrderbooks(),
-          fetchDerivatives(),
-        ]);
-        setSpotMarkets(spot);
-        setPerpMarkets(perp);
-      } catch (error) {
-        console.error("Error loading markets:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadData();
-    // No auto-refresh per user request
-  }, []);
+  }, [loadData]);
 
   const filteredSpotMarkets = useMemo(() => {
     return spotMarkets.filter(m =>
@@ -55,19 +58,37 @@ export default function Markets() {
     );
   }, [perpMarkets, searchQuery]);
 
-  if (loading) {
+  if (loading && spotMarkets.length === 0) {
     return <PageLoadingSkeleton />;
+  }
+
+  if (error && spotMarkets.length === 0) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Exchange Markets</h1>
+        <ErrorState message={error} onRetry={loadData} />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2">Exchange Markets</h1>
           <p className="text-muted-foreground">Comprehensive market overview and analytics</p>
         </div>
-        <ExportButton data={{ spot: filteredSpotMarkets, perp: filteredPerpMarkets }} filename="markets-data" />
+        <div className="flex gap-2">
+          <RefreshButton onRefresh={loadData} />
+          <EnhancedExportButton data={{ spot: filteredSpotMarkets, perp: filteredPerpMarkets }} filename="markets-data" exportType="markets" />
+        </div>
       </div>
+
+      {error && (
+        <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">
+          Warning: {error} - Showing cached data
+        </div>
+      )}
 
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

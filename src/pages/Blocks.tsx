@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchLatestBlock, fetchMetrics, BlockData, MetricsData } from "@/lib/rpc";
 import { Box, Clock, Zap, Activity, Hash } from "lucide-react";
-import { ExportButton } from "@/components/ExportButton";
+import { EnhancedExportButton } from "@/components/EnhancedExportButton";
+import { RefreshButton } from "@/components/RefreshButton";
+import { ErrorState } from "@/components/ErrorState";
 import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
 import { DataSourceIndicator } from "@/components/DataSourceIndicator";
 import {
@@ -21,90 +23,100 @@ export default function Blocks() {
   const [blocks, setBlocks] = useState<BlockData[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Fetch latest block and metrics with individual error handling
-        const [blockData, metricsData] = await Promise.all([
-          fetchLatestBlock().catch(e => {
-            console.error("Failed to fetch block:", e);
-            return null;
-          }),
-          fetchMetrics().catch(e => {
-            console.error("Failed to fetch metrics:", e);
-            return null;
-          }),
-        ]);
-        
-        if (blockData) setLatestBlock(blockData);
-        if (metricsData) setMetrics(metricsData);
+  const loadData = useCallback(async () => {
+    setError(null);
+    try {
+      // Fetch latest block and metrics with individual error handling
+      const [blockData, metricsData] = await Promise.all([
+        fetchLatestBlock().catch(e => {
+          console.error("Failed to fetch block:", e);
+          return null;
+        }),
+        fetchMetrics().catch(e => {
+          console.error("Failed to fetch metrics:", e);
+          return null;
+        }),
+      ]);
+      
+      if (blockData) setLatestBlock(blockData);
+      if (metricsData) setMetrics(metricsData);
 
-        const currentHeight = blockData ? parseInt(blockData.height) : 0;
-        if (!currentHeight) {
-          if (blockData) setBlocks([blockData]);
-          setLoading(false);
-          return;
-        }
-
-        // Fetch previous 9 blocks in PARALLEL with short timeout
-        const injPrice = 5.30;
-        const INJECTIVE_BLOCK_GAS_LIMIT = 50_000_000;
-        const INJECTIVE_GAS_PRICE = 160_000_000;
-        const INJ_DECIMALS = 1e18;
-
-        const blockPromises = Array.from({ length: 9 }, (_, i) => {
-          const height = currentHeight - (i + 1);
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 5000);
-          
-          return Promise.all([
-            fetch(`https://sentry.tm.injective.network:443/block?height=${height}`, { signal: controller.signal })
-              .then(r => r.json()).catch(() => null),
-            fetch(`https://sentry.tm.injective.network:443/block_results?height=${height}`, { signal: controller.signal })
-              .then(r => r.json()).catch(() => null)
-          ]).then(([blockRes, resultsRes]) => {
-            clearTimeout(timeout);
-            if (!blockRes?.result) return null;
-            
-            const txsResults = resultsRes?.result?.txs_results || [];
-            const totalGasUsed = txsResults.reduce((sum: number, tx: any) => sum + parseInt(tx.gas_used || "0"), 0);
-            const gasPercentage = parseFloat(((totalGasUsed / INJECTIVE_BLOCK_GAS_LIMIT) * 100).toFixed(2));
-            const feeINJ = ((totalGasUsed * INJECTIVE_GAS_PRICE) / INJ_DECIMALS).toFixed(6);
-            const feeUSDT = (parseFloat(feeINJ) * injPrice).toFixed(4);
-
-            return {
-              height: blockRes.result?.block?.header?.height || "0",
-              hash: blockRes.result?.block_id?.hash || "",
-              timestamp: blockRes.result?.block?.header?.time || new Date().toISOString(),
-              validator: blockRes.result?.block?.header?.proposer_address || "",
-              txCount: blockRes.result?.block?.data?.txs?.length || 0,
-              gasUsed: totalGasUsed.toString(),
-              gasPercentage,
-              gasFeeINJ: feeINJ,
-              gasFeeUSDT: feeUSDT,
-            };
-          }).catch(() => null);
-        });
-
-        const fetchedBlocks = await Promise.all(blockPromises);
-        const validBlocks = blockData 
-          ? [blockData, ...fetchedBlocks.filter((b): b is BlockData => b !== null)]
-          : fetchedBlocks.filter((b): b is BlockData => b !== null);
-        setBlocks(validBlocks);
-      } catch (error) {
-        console.error("Error loading blocks:", error);
-      } finally {
-        setLoading(false);
+      const currentHeight = blockData ? parseInt(blockData.height) : 0;
+      if (!currentHeight) {
+        if (blockData) setBlocks([blockData]);
+        return;
       }
-    };
 
-    loadData();
-    setLastUpdated(new Date());
+      // Fetch previous 9 blocks in PARALLEL with short timeout
+      const injPrice = 5.30;
+      const INJECTIVE_BLOCK_GAS_LIMIT = 50_000_000;
+      const INJECTIVE_GAS_PRICE = 160_000_000;
+      const INJ_DECIMALS = 1e18;
+
+      const blockPromises = Array.from({ length: 9 }, (_, i) => {
+        const height = currentHeight - (i + 1);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        
+        return Promise.all([
+          fetch(`https://sentry.tm.injective.network:443/block?height=${height}`, { signal: controller.signal })
+            .then(r => r.json()).catch(() => null),
+          fetch(`https://sentry.tm.injective.network:443/block_results?height=${height}`, { signal: controller.signal })
+            .then(r => r.json()).catch(() => null)
+        ]).then(([blockRes, resultsRes]) => {
+          clearTimeout(timeout);
+          if (!blockRes?.result) return null;
+          
+          const txsResults = resultsRes?.result?.txs_results || [];
+          const totalGasUsed = txsResults.reduce((sum: number, tx: any) => sum + parseInt(tx.gas_used || "0"), 0);
+          const gasPercentage = parseFloat(((totalGasUsed / INJECTIVE_BLOCK_GAS_LIMIT) * 100).toFixed(2));
+          const feeINJ = ((totalGasUsed * INJECTIVE_GAS_PRICE) / INJ_DECIMALS).toFixed(6);
+          const feeUSDT = (parseFloat(feeINJ) * injPrice).toFixed(4);
+
+          return {
+            height: blockRes.result?.block?.header?.height || "0",
+            hash: blockRes.result?.block_id?.hash || "",
+            timestamp: blockRes.result?.block?.header?.time || new Date().toISOString(),
+            validator: blockRes.result?.block?.header?.proposer_address || "",
+            txCount: blockRes.result?.block?.data?.txs?.length || 0,
+            gasUsed: totalGasUsed.toString(),
+            gasPercentage,
+            gasFeeINJ: feeINJ,
+            gasFeeUSDT: feeUSDT,
+          };
+        }).catch(() => null);
+      });
+
+      const fetchedBlocks = await Promise.all(blockPromises);
+      const validBlocks = blockData 
+        ? [blockData, ...fetchedBlocks.filter((b): b is BlockData => b !== null)]
+        : fetchedBlocks.filter((b): b is BlockData => b !== null);
+      setBlocks(validBlocks);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load block data");
+    } finally {
+      setLoading(false);
+      setLastUpdated(new Date());
+    }
   }, []);
 
-  if (loading) {
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  if (loading && !latestBlock) {
     return <PageLoadingSkeleton />;
+  }
+
+  if (error && !latestBlock) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Block & Transaction Analysis</h1>
+        <ErrorState message={error} onRetry={loadData} />
+      </div>
+    );
   }
 
   // Use defaults if data failed to load
@@ -113,18 +125,27 @@ export default function Blocks() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Block & Transaction Analysis</h1>
-        <p className="text-muted-foreground">Real-time blockchain activity monitoring · <span className="font-semibold text-primary">Injective Network</span></p>
-        <div className="flex justify-end">
-          <ExportButton data={{ latestBlock: displayBlock, metrics: displayMetrics, recentBlocks: blocks }} filename="blocks-data" />
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Block & Transaction Analysis</h1>
+          <p className="text-muted-foreground">Real-time blockchain activity monitoring · <span className="font-semibold text-primary">Injective Network</span></p>
         </div>
-
-        <DataSourceIndicator
-          lastUpdated={lastUpdated}
-          source={`${displayMetrics.activeValidators} Validators • TPS from ${blocks.length} Blocks`}
-        />
+        <div className="flex gap-2">
+          <RefreshButton onRefresh={loadData} />
+          <EnhancedExportButton data={{ latestBlock: displayBlock, metrics: displayMetrics, recentBlocks: blocks }} filename="blocks-data" exportType="blocks" />
+        </div>
       </div>
+
+      {error && (
+        <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">
+          Warning: {error} - Showing cached data
+        </div>
+      )}
+
+      <DataSourceIndicator
+        lastUpdated={lastUpdated}
+        source={`${displayMetrics.activeValidators} Validators • TPS from ${blocks.length} Blocks`}
+      />
 
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

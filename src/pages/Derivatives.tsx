@@ -1,9 +1,11 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchDerivativesFromBackend } from "@/lib/backend-api";
 import { PieChart, TrendingUp, DollarSign, Activity } from "lucide-react";
-import { ExportButton } from "@/components/ExportButton";
+import { EnhancedExportButton } from "@/components/EnhancedExportButton";
+import { RefreshButton } from "@/components/RefreshButton";
+import { ErrorState } from "@/components/ErrorState";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DataFilters } from "@/components/DataFilters";
 import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
@@ -30,38 +32,38 @@ export default function Derivatives() {
   const [derivatives, setDerivatives] = useState<DerivativeData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setError(null);
+    try {
+      console.log('[Derivatives] Fetching from backend API...');
+      const markets = await fetchDerivativesFromBackend();
+      console.log(`[Derivatives] Received ${markets.length} markets from backend`);
+
+      // Transform backend data to DerivativeData format
+      const transformedData: DerivativeData[] = markets.map(market => ({
+        market: market.ticker || "Unknown",
+        openInterest: "0", // Backend doesn't provide this yet
+        fundingRate: "0.0001", // Placeholder
+        markPrice: "0",
+        oraclePrice: "0",
+        leverage: market.initialMarginRatio
+          ? (1 / parseFloat(market.initialMarginRatio)).toFixed(1)
+          : "10.0"
+      }));
+
+      setDerivatives(transformedData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load derivatives");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        console.log('[Derivatives] Fetching from backend API...');
-        const markets = await fetchDerivativesFromBackend();
-        console.log(`[Derivatives] Received ${markets.length} markets from backend`);
-
-        // Transform backend data to DerivativeData format
-        const transformedData: DerivativeData[] = markets.map(market => ({
-          market: market.ticker || "Unknown",
-          openInterest: "0", // Backend doesn't provide this yet
-          fundingRate: "0.0001", // Placeholder
-          markPrice: "0",
-          oraclePrice: "0",
-          leverage: market.initialMarginRatio
-            ? (1 / parseFloat(market.initialMarginRatio)).toFixed(1)
-            : "10.0"
-        }));
-
-        setDerivatives(transformedData);
-      } catch (error) {
-        console.error("Error loading derivatives from backend:", error);
-        // Keep existing data if refresh fails
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadData();
-    // No auto-refresh per user request
-  }, []);
+  }, [loadData]);
 
   // CRITICAL: All hooks must be called BEFORE any conditional returns
   const filteredDerivatives = useMemo(() => {
@@ -84,19 +86,37 @@ export default function Derivatives() {
   }, [filteredDerivatives]);
 
   // Loading state check AFTER all hooks
-  if (loading) {
+  if (loading && derivatives.length === 0) {
     return <PageLoadingSkeleton />;
+  }
+
+  if (error && derivatives.length === 0) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Derivatives Markets</h1>
+        <ErrorState message={error} onRetry={loadData} />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2">Derivatives Markets</h1>
           <p className="text-muted-foreground">Perpetual futures and derivatives analytics</p>
         </div>
-        <ExportButton data={derivatives} filename="derivatives-data" />
+        <div className="flex gap-2">
+          <RefreshButton onRefresh={loadData} />
+          <EnhancedExportButton data={derivatives} filename="derivatives-data" exportType="derivatives" />
+        </div>
       </div>
+
+      {error && (
+        <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">
+          Warning: {error} - Showing cached data
+        </div>
+      )}
 
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { MetricCard } from "@/components/MetricCard";
 import { RiskBadge } from "@/components/RiskBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchMetrics, fetchRiskMetrics, MetricsData, RiskMetric } from "@/lib/rpc";
-import { ExportButton } from "@/components/ExportButton";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { EnhancedExportButton } from "@/components/EnhancedExportButton";
+import { RefreshButton } from "@/components/RefreshButton";
+import { ErrorState } from "@/components/ErrorState";
 import { DashboardSkeleton } from "@/components/LoadingSkeleton";
 import {
   Activity,
@@ -20,63 +21,99 @@ import {
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [riskMetrics, setRiskMetrics] = useState<RiskMetric[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadData = async () => {
+  const loadData = useCallback(async () => {
+    setError(null);
+    try {
       const [metricsData, riskData] = await Promise.all([
         fetchMetrics(),
         fetchRiskMetrics(),
       ]);
       setMetrics(metricsData);
       setRiskMetrics(riskData);
-    };
-
-    loadData();
-    // No auto-refresh per user request
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  if (!metrics) {
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  if (loading && !metrics) {
     return <DashboardSkeleton />;
   }
 
-  const riskBuffer = ((parseFloat(metrics.insuranceFund) / parseFloat(metrics.openInterest)) * 100).toFixed(2);
+  if (error && !metrics) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Injective Intelligence Dashboard</h1>
+        <ErrorState message={error} onRetry={loadData} />
+      </div>
+    );
+  }
+
+  const riskBuffer = metrics ? ((parseFloat(metrics.insuranceFund) / parseFloat(metrics.openInterest)) * 100).toFixed(2) : "0";
+
+  const exportData = {
+    metrics,
+    riskMetrics,
+    lastUpdated: new Date().toISOString(),
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2">Injective Intelligence Dashboard</h1>
           <p className="text-muted-foreground">Real-time blockchain analytics and risk monitoring</p>
         </div>
-        <ExportButton data={{ metrics, riskMetrics }} filename="dashboard-snapshot" />
+        <div className="flex gap-2">
+          <RefreshButton onRefresh={loadData} />
+          <EnhancedExportButton 
+            data={exportData} 
+            filename="dashboard-snapshot" 
+            exportType="dashboard"
+          />
+        </div>
       </div>
+
+      {error && (
+        <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">
+          Warning: {error} - Showing cached data
+        </div>
+      )}
 
       {/* Key Metrics Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Block Height"
-          value={metrics.blockHeight.toLocaleString()}
+          value={metrics?.blockHeight.toLocaleString() || "0"}
           icon={Activity}
           change="+1.2% from last hour"
           trend="up"
         />
         <MetricCard
           title="Transactions Per Second"
-          value={metrics.tps}
+          value={metrics?.tps || 0}
           icon={Zap}
-          change={`${metrics.avgBlockTime.toFixed(2)}s avg block time`}
+          change={`${metrics?.avgBlockTime.toFixed(2) || "0"}s avg block time`}
           trend="neutral"
         />
         <MetricCard
           title="Active Validators"
-          value={metrics.activeValidators}
+          value={metrics?.activeValidators || 0}
           icon={Users}
           change="Network healthy"
           trend="up"
         />
         <MetricCard
           title="Total Staked INJ"
-          value={`$${(parseFloat(metrics.totalStaked) / 1000000).toFixed(2)}M`}
+          value={`$${(parseFloat(metrics?.totalStaked || "0") / 1000000).toFixed(2)}M`}
           icon={Coins}
           change="+2.1% this week"
           trend="up"
@@ -94,7 +131,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              ${(parseFloat(metrics.openInterest) / 1000000).toFixed(2)}M
+              ${(parseFloat(metrics?.openInterest || "0") / 1000000).toFixed(2)}M
             </div>
             <p className="text-sm text-muted-foreground mt-1">
               Across all derivative markets
@@ -111,7 +148,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              ${(parseFloat(metrics.insuranceFund) / 1000000).toFixed(2)}M
+              ${(parseFloat(metrics?.insuranceFund || "0") / 1000000).toFixed(2)}M
             </div>
             <p className="text-sm text-muted-foreground mt-1">
               Protocol solvency buffer
@@ -149,7 +186,7 @@ export default function Dashboard() {
               <div className="flex justify-between mb-1">
                 <span className="text-sm text-muted-foreground">Spot Markets</span>
                 <span className="text-sm font-medium">
-                  ${(parseFloat(metrics.spotVolume24h) / 1000000).toFixed(2)}M
+                  ${(parseFloat(metrics?.spotVolume24h || "0") / 1000000).toFixed(2)}M
                 </span>
               </div>
               <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -160,7 +197,7 @@ export default function Dashboard() {
               <div className="flex justify-between mb-1">
                 <span className="text-sm text-muted-foreground">Derivatives</span>
                 <span className="text-sm font-medium">
-                  ${(parseFloat(metrics.derivativesVolume24h) / 1000000).toFixed(2)}M
+                  ${(parseFloat(metrics?.derivativesVolume24h || "0") / 1000000).toFixed(2)}M
                 </span>
               </div>
               <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -171,7 +208,7 @@ export default function Dashboard() {
               <div className="flex justify-between">
                 <span className="text-sm font-medium">Total Volume</span>
                 <span className="text-lg font-bold">
-                  ${((parseFloat(metrics.spotVolume24h) + parseFloat(metrics.derivativesVolume24h)) / 1000000).toFixed(2)}M
+                  ${((parseFloat(metrics?.spotVolume24h || "0") + parseFloat(metrics?.derivativesVolume24h || "0")) / 1000000).toFixed(2)}M
                 </span>
               </div>
             </div>
@@ -197,6 +234,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-    </div >
+    </div>
   );
 }
