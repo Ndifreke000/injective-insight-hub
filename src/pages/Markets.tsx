@@ -40,10 +40,7 @@ export default function Markets() {
     };
 
     loadData();
-
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
+    // No auto-refresh per user request
   }, []);
 
   const filteredSpotMarkets = useMemo(() => {

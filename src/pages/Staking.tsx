@@ -18,10 +18,7 @@ export default function Staking() {
     };
 
     loadData();
-
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
+    // No auto-refresh - removed per user request
   }, []);
 
   if (!metrics) {
