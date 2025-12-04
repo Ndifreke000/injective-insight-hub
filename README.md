@@ -7,126 +7,62 @@
 [![React](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-7.2-purple.svg)](https://vitejs.dev/)
 
-## 🎯 Overview
-
-Injective Insight Hub is a comprehensive analytics platform providing real-time insights into the Injective blockchain. Built with React, TypeScript, and the Injective SDK, it offers live monitoring of blocks, transactions, orderbooks, derivatives markets, staking metrics, and risk analysis.
-
 **Live Demo**: [https://v0-injective-intelligence-platform.vercel.app/](https://v0-injective-intelligence-platform.vercel.app/)
 
-## 🚨 Current Status: 100% Functional ✅
+## 🎯 Overview
 
-> **Last Updated**: December 4, 2025 (17:02 CET)
+Injective Insight Hub is a comprehensive analytics platform providing real-time insights into the Injective blockchain ecosystem. Built with modern web technologies and the Injective SDK, it delivers professional-grade blockchain intelligence through an intuitive interface.
 
-**All Systems Operational**:
-- ✅ Frontend deployed to Vercel
-- ✅ Backend deployed (Vercel serverless functions)
-- ✅ All API endpoints working
-- ✅ Database connected (Neon PostgreSQL)
-- ✅ Real-time data flowing correctly
-- ✅ CoinGecko API operational (INJ price: $6.01)
-- ✅ Validators endpoint fixed (shows 50 validators)
-- ✅ Insurance fund working ($1T+ balance)
+## ✨ Features
 
-**Recent Fix** (commit 0794dd8):
-- Fixed validator REST endpoint (changed to sentry.lcd.injective.network)
-- Improved error logging for CoinGecko API
-- Resolved 404 errors on validator fetching
+### 📊 Real-Time Analytics
 
-See [`DEPLOYMENT_SUCCESS.txt`](./DEPLOYMENT_SUCCESS.txt) for detailed verification.
+- **Block Explorer** - Live block monitoring with gas tracking and TPS metrics
+- **Transaction Analysis** - Real-time transaction flow and network activity
+- **Price Tracking** - INJ token price with 24h change and market data
+- **Market Overview** - Trading volume and open interest across all markets
 
-### ✅ Working Features
+### 🔍 Advanced Monitoring
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| **Frontend Build** | ✅ Working | Deployed to Vercel, 2.4MB bundle |
-| **UI Components** | ✅ Working | shadcn/ui, dark mode, responsive |
-| **Backend Code** | ✅ Working | Compiles successfully, no errors |
-| **Health Endpoint** | ✅ Working | `/health` returns 200 OK |
-| **Database Schema** | ✅ Ready | Prisma models defined, needs connection |
+- **Derivatives Markets** - Track perpetual futures and derivatives trading
+- **Spot Markets** - Monitor spot trading activity and liquidity
+- **Orderbook Analysis** - Live bid/ask spreads for major trading pairs (BTC, ETH, BNB, INJ)
+- **Risk Metrics** - Dynamic risk calculations from 71+ derivative markets
 
-### ❌ Not Working (Fixable)
+### 🛡️ Network Health
 
-| Feature | Status | Issue | Fix Required |
-|---------|--------|-------|-------------|
-| **Price Data** | ❌ Failing | CoinGecko API error | Verify API key or use alternative |
-| **Backend APIs** | ❌ Not Deployed | Running on localhost only | Deploy to Render |
-| **Historical Data** | ❌ No Database | PostgreSQL not connected | Add DATABASE_URL |
-| **Insurance Fund** | ⚠️ CORS Blocked | Returns $0 instead of real data | Deploy backend proxy |
-| **Validators** | ⚠️ CORS Blocked | Shows fallback count | Deploy backend proxy |
+- **Validator Tracking** - Monitor active validators and staking metrics
+- **Insurance Fund** - Track protocol insurance fund balance
+- **Liquidation Heatmap** - Visualize liquidation risk clusters
+- **Oracle Health** - Monitor price oracle reliability
 
-## 🚨 Current Limitations
+### 📈 Data Visualization
 
-### CORS Policy Restrictions
+- **Interactive Charts** - Recharts-powered visualizations
+- **Risk Heatmaps** - Color-coded risk level indicators
+- **Real-time Updates** - Auto-refreshing data streams
+- **Dark Mode** - Professional dark theme optimized for trading
 
-Injective's public gRPC endpoints (`publicnode.com`, `sentry.grpc.injective.network`) are configured for backend/server use and **block browser requests** due to CORS (Cross-Origin Resource Sharing) policies.
+## 🛠️ Tech Stack
 
-**Affected APIs**:
-- `ChainGrpcStakingApi` - Validator data
-- `IndexerGrpcInsuranceFundApi` - Insurance fund balance
-- `IndexerGrpcDerivativesApi` - Complete market listings
+### Frontend
+- **React 19** - Modern UI framework
+- **TypeScript** - Type-safe development
+- **Vite** - Lightning-fast build tool
+- **shadcn/ui** - Beautiful, accessible components
+- **Tailwind CSS** - Utility-first styling
+- **React Query** - Powerful data fetching and caching
 
-**Console Error**:
-```
-Access to fetch at 'https://injective-grpc.publicnode.com/...' 
-from origin 'http://localhost:8082' has been blocked by CORS policy
-```
+### Backend
+- **Express** - Node.js web framework
+- **Injective SDK** - Official Injective Protocol SDK
+- **Prisma ORM** - Type-safe database access
+- **PostgreSQL** - Reliable data storage
 
-**This is NOT a bug in our code** - it's an infrastructure limitation of free public RPCs.
-
-## 💰 Cost & Infrastructure Options
-
-### Option 1: Backend Proxy (Recommended) - $5-20/month
-
-Build a lightweight backend server to proxy gRPC requests and bypass CORS:
-
-```
-Browser → Your Backend (Node.js/Express) → Injective Public RPCs → Data
-```
-
-**Pros**:
-- ✅ FREE RPC usage (public endpoints)
-- ✅ Full feature access
-- ✅ Add caching to reduce load
-- ✅ Complete control
-
-**Cons**:
-- ❌ 2-3 days development time
-- ❌ Requires hosting ($5-20/mo on Railway/Vercel)
-
-**Implementation**: ~100-200 lines of Express code
-
-### Option 2: Paid RPC with CORS - $49-199/month
-
-Use a paid RPC provider that supports browser CORS:
-
-**Providers**:
-- **GetBlock**: $49/mo (100K requests/day)
-- **QuickNode**: $9-299/mo (tiered)
-- **Ankr**: $20-100/mo
-
-**Pros**:
-- ✅ Zero dev work
-- ✅ Direct browser access
-- ✅ Better uptime & speed
-
-**Cons**:
-- ❌ Monthly subscription cost
-- ❌ Vendor lock-in
-
-### Option 3: Stay Free - $0/month
-
-Accept current limitations and focus on working features.
-
-**Good for**: Demo, portfolio, MVP
-
-## 📊 Feature Completeness by Cost Tier
-
-| Tier | Cost/Month | Features | Validator Data | Insurance Fund | Full Markets |
-|------|------------|----------|----------------|----------------|--------------|
-| **Free (Current)** | $0 | 70% | ❌ Fallback | ❌ $0 | ❌ Limited |
-| **Backend Proxy** | $5-20 | 100% | ✅ Real | ✅ Real | ✅ Complete |
-| **Paid RPC** | $49-199 | 100% | ✅ Real | ✅ Real | ✅ Complete |
-| **Hybrid** | $54-219 | 100%+ | ✅ Real | ✅ Real | ✅ Complete |
+### Infrastructure
+- **Vercel** - Frontend and serverless API hosting
+- **Neon** - Serverless PostgreSQL database
+- **CoinGecko API** - Cryptocurrency price data
 
 ## 🚀 Getting Started
 
@@ -139,7 +75,7 @@ Accept current limitations and focus on working features.
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/injective-insight-hub.git
+git clone https://github.com/Ndifreke000/injective-insight-hub.git
 cd injective-insight-hub
 
 # Install dependencies
@@ -151,49 +87,26 @@ npm run dev
 
 Visit `http://localhost:8082`
 
+### Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+# Backend URL (for production)
+VITE_BACKEND_URL=https://your-backend-url.vercel.app
+
+# Optional: Supabase (for data exports)
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-key
+```
+
 ### Build for Production
 
 ```bash
 npm run build
 ```
 
-## 🗺️ Development Roadmap
-
-### Phase 1: Current (FREE) ✅
-- [x] Block & transaction explorer
-- [x] Orderbook analysis
-- [x] Risk metrics calculations
-- [x] Data source indicators
-- [x] Real-time gas tracking
-
-### Phase 2: Backend Proxy ($5-20/mo)
-- [ ] Express/FastAPI backend server
-- [ ] gRPC proxy endpoints
-- [ ] Response caching (Redis)
-- [ ] Deploy on Railway/Vercel
-- [ ] Unlock all blocked features
-
-### Phase 3: Production ($49-99/mo)
-- [ ] Paid RPC integration (GetBlock)
-- [ ] User authentication (Supabase)
-- [ ] Saved dashboards
-- [ ] Real-time notifications
-- [ ] Custom alerts
-
-### Phase 4: Scale ($200-500/mo)
-- [ ] Historical data indexer
-- [ ] Advanced analytics
-- [ ] Custom metrics builder
-- [ ] Public API
-- [ ] Mobile app
-
-## 🛠️ Tech Stack
-
-- **Frontend**: React 19, TypeScript, Vite
-- **UI**: shadcn/ui, Tailwind CSS, Recharts
-- **Blockchain**: Injective SDK, Tendermint RPC
-- **State**: React Query, Context API
-- **Routing**: React Router v6
+The build output will be in the `dist/` directory.
 
 ## 📁 Project Structure
 
@@ -201,51 +114,45 @@ npm run build
 injective-insight-hub/
 ├── src/
 │   ├── components/     # Reusable UI components
-│   ├── pages/         # Page components (Blocks, Risk, etc.)
-│   ├── lib/           # RPC clients, utilities
-│   ├── contexts/      # React contexts (Theme)
+│   ├── pages/         # Page components
+│   ├── lib/           # Utilities and helpers
+│   ├── contexts/      # React contexts
 │   └── types/         # TypeScript definitions
-├── public/            # Static assets
-└── package.json
+├── api/               # Vercel serverless functions
+├── backend/           # Express backend server
+├── prisma/            # Database schema
+└── public/            # Static assets
 ```
 
-## 🔧 Configuration
+## 🎨 Key Pages
 
-### RPC Endpoints
+- **Dashboard** - Overview of key metrics and network health
+- **Blocks** - Real-time block explorer
+- **Risk Analysis** - Comprehensive risk monitoring
+- **Trading Activity** - Market volume and open interest
+- **Derivatives** - Perpetual futures tracking
+- **Orderbook** - Live order book analysis
+- **Staking** - Validator and staking information
 
-Configured in `src/lib/rpc-manager.ts`:
+## 🔗 API Endpoints
 
-```typescript
-{
-  name: 'PublicNode',
-  grpcUrl: 'https://injective-grpc.publicnode.com:443',
-  restUrl: 'https://injective-rpc.publicnode.com:443'
-}
-```
+The platform uses serverless functions deployed on Vercel:
 
-To use a paid RPC, update these URLs with your provider's endpoints.
-
-## 📝 Data Sources
-
-### Working (Public RPCs)
-- **Tendermint RPC**: Block data, transactions, gas metrics
-- **Indexer API**: Orderbook prices, some market data
-- **Calculated**: Risk scores, TPS, bonding ratio
-
-### Blocked (Need Backend/Paid RPC)
-- **ChainGrpc APIs**: Staking, governance, bank balances
-- **Insurance API**: Fund balance and coverage
-- **Full Derivatives**: Complete market listings
+- `/api/price/inj` - INJ token price data
+- `/api/validators` - Active validator information
+- `/api/insurance-fund` - Insurance fund balance
+- `/api/markets/derivatives` - Derivative market data
+- `/api/markets/spot` - Spot market data
+- `/api/markets/volume` - 24h trading volume
+- `/api/markets/open-interest` - Open interest metrics
 
 ## 🤝 Contributing
 
-Contributions welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for:
+- Development status and roadmap
+- Known issues and limitations
+- How to contribute
+- Code style guidelines
 
 ## 📜 License
 
@@ -254,14 +161,15 @@ MIT License - see [LICENSE](LICENSE) file for details
 ## 🙏 Acknowledgments
 
 - [Injective Protocol](https://injective.com) - Blockchain infrastructure
-- [shadcn/ui](https://ui.shadcn.com) - UI components
-- [Vite](https://vitejs.dev) - Build tool
+- [shadcn/ui](https://ui.shadcn.com) - UI component library
+- [Vite](https://vitejs.dev) - Build tooling
+- [Vercel](https://vercel.com) - Hosting platform
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/injective-insight-hub/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/injective-insight-hub/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Ndifreke000/injective-insight-hub/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Ndifreke000/injective-insight-hub/discussions)
 
 ---
 
-**Note**: This project currently uses free public RPCs with known CORS limitations. See the "Cost & Infrastructure Options" section above for solutions to unlock 100% functionality.
+Built with ❤️ for the Injective ecosystem
