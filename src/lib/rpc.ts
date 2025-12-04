@@ -490,33 +490,43 @@ export async function fetchDerivatives(): Promise<DerivativeData[]> {
   }
 
   try {
-    const response = await rpcManager.withFallback(async (endpoint) => {
-      const client = new IndexerGrpcDerivativesApi(endpoint.grpcUrl);
-      return await withTimeout(client.fetchMarkets(), 6000);
-    }, 2);
+    console.log('[fetchDerivatives] Fetching from backend API...');
+    // Use backend API instead of direct RPC
+    const { fetchDerivativeMarketsFromBackend } = await import('./backend-api.js');
+    const marketsArray = await fetchDerivativeMarketsFromBackend();
 
-    const marketsArray = Array.isArray(response) ? response : (response as any).markets || [];
-
-    console.log(`[fetchDerivatives] Fetched ${marketsArray.length} derivative markets from RPC`);
+    console.log(`[fetchDerivatives] Fetched ${marketsArray.length} derivative markets from backend`);
 
     // Map to DerivativeData with actual data from market objects
     const mappedData = marketsArray.map((market: any) => {
       // Extract market info
       const ticker = market.ticker || "Unknown";
 
-      // Get mark price and oracle price (these are usually available)
-      const markPrice = market.markPrice || "0";
-      const oraclePrice = market.oraclePrice || "0";
+      // Get mark price and oracle price from market data
+      // These come as very large numbers that need to be converted
+      const quoteDecimals = market.quoteToken?.decimals || 6;
+
+      // Convert prices from chain format to human-readable
+      const convertPrice = (chainPrice: string | number): string => {
+        const price = typeof chainPrice === 'string' ? parseFloat(chainPrice) : chainPrice;
+        if (!price || price === 0) return "0";
+        // Prices are in chain format, need to divide by 10^decimals
+        return (price / Math.pow(10, quoteDecimals)).toFixed(2);
+      };
+
+      const markPrice = convertPrice(market.markPrice || market.price || "0");
+      const oraclePrice = convertPrice(market.oraclePrice || market.price || "0");
 
       // Get perpetual market info if available
       const perpInfo = market.perpetualMarketInfo || {};
       const fundingInfo = market.perpetualMarketFunding || {};
 
-      // Open interest might be in marketCap field
-      const openInterest = perpInfo.marketCap || perpInfo.openInterest || "0";
+      // Open interest - might need conversion too
+      const rawOI = perpInfo.marketCap || perpInfo.openInterest || market.openInterest || "0";
+      const openInterest = typeof rawOI === 'string' ? rawOI : rawOI.toString();
 
-      // Funding rate
-      const fundingRate = fundingInfo.fundingRate || fundingInfo.cumulativeFunding || "0";
+      // Funding rate - usually a small decimal
+      const fundingRate = (fundingInfo.fundingRate || fundingInfo.cumulativeFunding || "0").toString();
 
       // Calculate leverage from margin ratio if available
       const initialMargin = parseFloat(market.initialMarginRatio || perpInfo.initialMarginRatio || "0.1");
@@ -536,17 +546,45 @@ export async function fetchDerivatives(): Promise<DerivativeData[]> {
     derivativesCache.data = mappedData;
     derivativesCache.timestamp = now;
 
+    console.log(`[fetchDerivatives] ✓ Transformed ${mappedData.length} markets successfully`);
     return mappedData;
   } catch (error) {
-    console.error("Error fetching derivatives:", error);
+    console.error("[fetchDerivatives] Error fetching from backend:", error);
 
-    // Return stale cache as last resort if available
-    if (derivativesCache.data.length > 0) {
-      console.warn('[fetchDerivatives] Using stale cache due to error (age: ' + Math.round((now - derivativesCache.timestamp) / 1000) + 's)');
-      return derivativesCache.data;
+    // Try fallback to direct RPC as last resort
+    try {
+      console.warn('[fetchDerivatives] Attempting fallback to direct RPC...');
+      const response = await rpcManager.withFallback(async (endpoint) => {
+        const client = new IndexerGrpcDerivativesApi(endpoint.grpcUrl);
+        return await withTimeout(client.fetchMarkets(), 6000);
+      }, 2);
+
+      const marketsArray = Array.isArray(response) ? response : (response as any).markets || [];
+      console.log(`[fetchDerivatives] Fallback: Fetched ${marketsArray.length} markets from RPC`);
+
+      const mappedData = marketsArray.map((market: any) => ({
+        market: market.ticker || "Unknown",
+        openInterest: (market.perpetualMarketInfo?.marketCap || market.perpetualMarketInfo?.openInterest || "0").toString(),
+        fundingRate: (market.perpetualMarketFunding?.fundingRate || "0").toString(),
+        markPrice: (market.markPrice || "0").toString(),
+        oraclePrice: (market.oraclePrice || "0").toString(),
+        leverage: (1 / parseFloat(market.initialMarginRatio || "0.1")).toFixed(1)
+      }));
+
+      derivativesCache.data = mappedData;
+      derivativesCache.timestamp = now;
+      return mappedData;
+    } catch (fallbackError) {
+      console.error("[fetchDerivatives] Fallback also failed:", fallbackError);
+
+      // Return stale cache as last resort if available
+      if (derivativesCache.data.length > 0) {
+        console.warn('[fetchDerivatives] Using stale cache due to error (age: ' + Math.round((now - derivativesCache.timestamp) / 1000) + 's)');
+        return derivativesCache.data;
+      }
+
+      return [];
     }
-
-    return [];
   }
 }
 
