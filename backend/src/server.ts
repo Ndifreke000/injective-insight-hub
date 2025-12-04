@@ -16,10 +16,18 @@ import { fetchWhaleActivities } from './services/whales.js';
 
 const app = express();
 
-// CORS configuration
+// CORS configuration - allow requests from frontend
 app.use(cors({
-    origin: config.allowedOrigins,
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:8080',
+        'http://localhost:3000',
+        'https://v0-injective-intelligence-platform.vercel.app',
+        /\.vercel\.app$/  // Allow all Vercel preview deployments
+    ],
     credentials: true,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // JSON parsing
