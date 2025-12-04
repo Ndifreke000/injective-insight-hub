@@ -1,25 +1,29 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RiskBadge } from "@/components/RiskBadge";
 import { fetchRiskMetrics, RiskMetric } from "@/lib/rpc";
 import { Activity, AlertTriangle } from "lucide-react";
 import { DataFilters } from "@/components/DataFilters";
-import { ExportButton } from "@/components/ExportButton";
+import { EnhancedExportButton } from "@/components/EnhancedExportButton";
+import { RefreshButton } from "@/components/RefreshButton";
 import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
 import { LiquidationHeatmap } from "@/components/LiquidationHeatmap";
 
 export default function Heatmap() {
   const [riskMetrics, setRiskMetrics] = useState<RiskMetric[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const data = await fetchRiskMetrics();
+    setRiskMetrics(data);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      const data = await fetchRiskMetrics();
-      setRiskMetrics(data);
-    };
-
     loadData();
-  }, []);
+  }, [loadData]);
 
   const filteredMetrics = useMemo(() => {
     return riskMetrics.filter(m =>
@@ -43,14 +47,15 @@ export default function Heatmap() {
           <h1 className="text-3xl font-bold mb-2">Market Risk Heatmap</h1>
           <p className="text-muted-foreground">Systemic risk aggregation and monitoring</p>
         </div>
-        <ExportButton data={filteredMetrics} filename="risk-heatmap" />
+        <div className="flex gap-2">
+          <RefreshButton onRefresh={loadData} />
+          <EnhancedExportButton
+            data={filteredMetrics}
+            filename="risk-heatmap"
+            exportType="risk-heatmap"
+          />
+        </div>
       </div>
-
-      <DataFilters
-        searchPlaceholder="Search risk categories..."
-        onSearchChange={setSearchQuery}
-        showDateRange={false}
-      />
 
       <DataFilters
         searchPlaceholder="Search risk categories..."

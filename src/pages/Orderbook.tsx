@@ -1,10 +1,11 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchOrderbooks, OrderbookData } from "@/lib/rpc";
 import { BookOpen, TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ExportButton } from "@/components/ExportButton";
+import { EnhancedExportButton } from "@/components/EnhancedExportButton";
+import { RefreshButton } from "@/components/RefreshButton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { DataFilters } from "@/components/DataFilters";
 import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
@@ -13,16 +14,19 @@ export default function Orderbook() {
   const [orderbooks, setOrderbooks] = useState<OrderbookData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMarket, setSelectedMarket] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const data = await fetchOrderbooks();
+    setOrderbooks(data);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      const data = await fetchOrderbooks();
-      setOrderbooks(data);
-    };
-
     loadData();
     // Auto-refresh removed for better performance
-  }, []);
+  }, [loadData]);
 
   const filteredOrderbooks = useMemo(() => {
     return orderbooks.filter(ob =>
@@ -38,7 +42,14 @@ export default function Orderbook() {
             <h1 className="text-3xl font-bold mb-2">Orderbook & Liquidity</h1>
             <p className="text-muted-foreground">Real-time market depth and liquidity analysis</p>
           </div>
-          <ExportButton data={orderbooks} filename="orderbook-data" />
+          <div className="flex gap-2">
+            <RefreshButton onRefresh={loadData} />
+            <EnhancedExportButton
+              data={orderbooks}
+              filename="orderbook-data"
+              exportType="orderbook"
+            />
+          </div>
         </div>
         <DataFilters
           searchPlaceholder="Search markets..."
@@ -65,7 +76,14 @@ export default function Orderbook() {
           <h1 className="text-3xl font-bold mb-2">Orderbook & Liquidity</h1>
           <p className="text-muted-foreground">Real-time market depth and liquidity analysis</p>
         </div>
-        <ExportButton data={filteredOrderbooks} filename="orderbook-data" />
+        <div className="flex gap-2">
+          <RefreshButton onRefresh={loadData} />
+          <EnhancedExportButton
+            data={filteredOrderbooks}
+            filename="orderbook-data"
+            exportType="orderbook"
+          />
+        </div>
       </div>
 
       <DataFilters

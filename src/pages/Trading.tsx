@@ -1,23 +1,27 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchMetrics, MetricsData } from "@/lib/rpc";
 import { TrendingUp, DollarSign, PieChart } from "lucide-react";
-import { ExportButton } from "@/components/ExportButton";
+import { EnhancedExportButton } from "@/components/EnhancedExportButton";
+import { RefreshButton } from "@/components/RefreshButton";
 import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
+import { formatCurrency } from "@/lib/format-numbers";
 
 export default function Trading() {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const data = await fetchMetrics();
+    setMetrics(data);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      const data = await fetchMetrics();
-      setMetrics(data);
-    };
-
     loadData();
-    // No auto-refresh per user request
-  }, []);
+  }, [loadData]);
 
   if (!metrics) {
     return <PageLoadingSkeleton />;
@@ -34,28 +38,35 @@ export default function Trading() {
           <h1 className="text-3xl font-bold mb-2">Trading Activity</h1>
           <p className="text-muted-foreground">24-hour trading metrics and market activity</p>
         </div>
-        <ExportButton data={metrics} filename="trading-metrics" />
+        <div className="flex gap-2">
+          <RefreshButton onRefresh={loadData} />
+          <EnhancedExportButton
+            data={metrics}
+            filename="trading-metrics"
+            exportType="trading"
+          />
+        </div>
       </div>
 
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <MetricCard
           title="Total 24h Volume"
-          value={`$${(totalVolume / 1000000).toFixed(2)}M`}
+          value={formatCurrency(totalVolume)}
           icon={DollarSign}
           change="Spot + Derivatives"
           trend="up"
         />
         <MetricCard
           title="Spot Volume"
-          value={`$${(parseFloat(metrics.spotVolume24h) / 1000000).toFixed(2)}M`}
+          value={formatCurrency(parseFloat(metrics.spotVolume24h))}
           icon={TrendingUp}
           change={`${spotPercentage.toFixed(1)}% of total`}
           trend="up"
         />
         <MetricCard
           title="Derivatives Volume"
-          value={`$${(parseFloat(metrics.derivativesVolume24h) / 1000000).toFixed(2)}M`}
+          value={formatCurrency(parseFloat(metrics.derivativesVolume24h))}
           icon={PieChart}
           change={`${derivPercentage.toFixed(1)}% of total`}
           trend="up"
@@ -73,7 +84,7 @@ export default function Trading() {
               <div className="flex justify-between mb-2">
                 <span className="text-sm font-medium">Spot Markets</span>
                 <span className="text-sm font-bold">
-                  ${(parseFloat(metrics.spotVolume24h) / 1000000).toFixed(2)}M ({spotPercentage.toFixed(1)}%)
+                  {formatCurrency(parseFloat(metrics.spotVolume24h))} ({spotPercentage.toFixed(1)}%)
                 </span>
               </div>
               <div className="h-4 bg-secondary rounded-full overflow-hidden">
@@ -87,7 +98,7 @@ export default function Trading() {
               <div className="flex justify-between mb-2">
                 <span className="text-sm font-medium">Derivatives Markets</span>
                 <span className="text-sm font-bold">
-                  ${(parseFloat(metrics.derivativesVolume24h) / 1000000).toFixed(2)}M ({derivPercentage.toFixed(1)}%)
+                  {formatCurrency(parseFloat(metrics.derivativesVolume24h))} ({derivPercentage.toFixed(1)}%)
                 </span>
               </div>
               <div className="h-4 bg-secondary rounded-full overflow-hidden">
@@ -118,11 +129,11 @@ export default function Trading() {
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Total Open Interest</span>
-              <span className="text-sm font-medium">${(parseFloat(metrics.openInterest) / 1000000).toFixed(2)}M</span>
+              <span className="text-sm font-medium">{formatCurrency(parseFloat(metrics.openInterest))}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Insurance Fund</span>
-              <span className="text-sm font-medium text-success">${(parseFloat(metrics.insuranceFund) / 1000000).toFixed(2)}M</span>
+              <span className="text-sm font-medium text-success">{formatCurrency(parseFloat(metrics.insuranceFund))}</span>
             </div>
           </CardContent>
         </Card>
@@ -134,7 +145,7 @@ export default function Trading() {
           <CardContent className="space-y-4">
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">24h Total Volume</span>
-              <span className="text-sm font-medium">${(totalVolume / 1000000).toFixed(2)}M</span>
+              <span className="text-sm font-medium">{formatCurrency(totalVolume)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Spot/Derivatives Ratio</span>
@@ -142,7 +153,7 @@ export default function Trading() {
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Avg Market Volume</span>
-              <span className="text-sm font-medium">${(totalVolume / (138 + 71) / 1000).toFixed(2)}K</span>
+              <span className="text-sm font-medium">{formatCurrency(totalVolume / (138 + 71))}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Total Markets Active</span>

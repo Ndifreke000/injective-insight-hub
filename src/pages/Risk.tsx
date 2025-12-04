@@ -1,31 +1,36 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { RiskBadge } from "@/components/RiskBadge";
 import { fetchMetrics, fetchRiskMetrics, MetricsData, RiskMetric } from "@/lib/rpc";
 import { AlertTriangle, Shield, TrendingUp, Activity } from "lucide-react";
-import { ExportButton } from "@/components/ExportButton";
+import { EnhancedExportButton } from "@/components/EnhancedExportButton";
+import { RefreshButton } from "@/components/RefreshButton";
 import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
 import { DataSourceIndicator } from "@/components/DataSourceIndicator";
+import { formatCurrency } from "@/lib/format-numbers";
 
 export default function Risk() {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [riskMetrics, setRiskMetrics] = useState<RiskMetric[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [loading, setLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const [metricsData, riskData] = await Promise.all([
+      fetchMetrics(),
+      fetchRiskMetrics(),
+    ]);
+    setMetrics(metricsData);
+    setRiskMetrics(riskData);
+    setLastUpdated(new Date());
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      const [metricsData, riskData] = await Promise.all([
-        fetchMetrics(),
-        fetchRiskMetrics(),
-      ]);
-      setMetrics(metricsData);
-      setRiskMetrics(riskData);
-      setLastUpdated(new Date());
-    };
-
     loadData();
-  }, []);
+  }, [loadData]);
 
   if (!metrics) {
     return <PageLoadingSkeleton />;
@@ -40,7 +45,14 @@ export default function Risk() {
           <h1 className="text-3xl font-bold mb-2">Risk & Safety Metrics</h1>
           <p className="text-muted-foreground">Protocol solvency and risk monitoring</p>
         </div>
-        <ExportButton data={{ metrics, riskMetrics }} filename="risk-data" />
+        <div className="flex gap-2">
+          <RefreshButton onRefresh={loadData} />
+          <EnhancedExportButton
+            data={{ metrics, riskMetrics }}
+            filename="risk-data"
+            exportType="risk"
+          />
+        </div>
       </div>
 
       <DataSourceIndicator
@@ -52,7 +64,7 @@ export default function Risk() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Insurance Fund"
-          value={`$${(parseFloat(metrics.insuranceFund) / 1000000).toFixed(2)}M`}
+          value={formatCurrency(parseFloat(metrics.insuranceFund))}
           icon={Shield}
           change={metrics.insuranceFund === "0" ? "⚠️ API Unavailable" : "+3.2% this week"}
           trend={metrics.insuranceFund === "0" ? "down" : "up"}
@@ -66,7 +78,7 @@ export default function Risk() {
         />
         <MetricCard
           title="Open Interest"
-          value={`$${(parseFloat(metrics.openInterest) / 1000000).toFixed(2)}M`}
+          value={formatCurrency(parseFloat(metrics.openInterest))}
           icon={TrendingUp}
           change="Total exposure"
           trend="neutral"
@@ -93,11 +105,11 @@ export default function Risk() {
             <div className="grid gap-4 md:grid-cols-3">
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Insurance Fund</div>
-                <div className="text-2xl font-bold">${(parseFloat(metrics.insuranceFund) / 1000000).toFixed(2)}M</div>
+                <div className="text-2xl font-bold">{formatCurrency(parseFloat(metrics.insuranceFund))}</div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Open Interest</div>
-                <div className="text-2xl font-bold">${(parseFloat(metrics.openInterest) / 1000000).toFixed(2)}M</div>
+                <div className="text-2xl font-bold">{formatCurrency(parseFloat(metrics.openInterest))}</div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Coverage Ratio</div>
@@ -177,7 +189,7 @@ export default function Risk() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Total Balance</span>
-                    <span className="font-medium">${(parseFloat(metrics.insuranceFund) / 1000000).toFixed(2)}M</span>
+                    <span className="font-medium">{formatCurrency(parseFloat(metrics.insuranceFund))}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Number of Funds</span>
@@ -185,7 +197,7 @@ export default function Risk() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Avg Fund Size</span>
-                    <span className="font-medium">${(parseFloat(metrics.insuranceFund) / 129 / 1000).toFixed(2)}K</span>
+                    <span className="font-medium">{formatCurrency(parseFloat(metrics.insuranceFund) / 129)}</span>
                   </div>
                 </div>
               </div>
@@ -204,7 +216,7 @@ export default function Risk() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Protected OI</span>
-                    <span className="font-medium">${(parseFloat(metrics.openInterest) / 1000000).toFixed(2)}M</span>
+                    <span className="font-medium">{formatCurrency(parseFloat(metrics.openInterest))}</span>
                   </div>
                 </div>
               </div>

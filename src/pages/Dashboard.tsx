@@ -7,6 +7,7 @@ import { EnhancedExportButton } from "@/components/EnhancedExportButton";
 import { RefreshButton } from "@/components/RefreshButton";
 import { ErrorState } from "@/components/ErrorState";
 import { DashboardSkeleton } from "@/components/LoadingSkeleton";
+import { formatCurrency } from "@/lib/format-numbers";
 import {
   Activity,
   TrendingUp,
@@ -74,9 +75,9 @@ export default function Dashboard() {
         </div>
         <div className="flex gap-2">
           <RefreshButton onRefresh={loadData} />
-          <EnhancedExportButton 
-            data={exportData} 
-            filename="dashboard-snapshot" 
+          <EnhancedExportButton
+            data={exportData}
+            filename="dashboard-snapshot"
             exportType="dashboard"
           />
         </div>
@@ -113,7 +114,7 @@ export default function Dashboard() {
         />
         <MetricCard
           title="Total Staked INJ"
-          value={`$${(parseFloat(metrics?.totalStaked || "0") / 1000000).toFixed(2)}M`}
+          value={formatCurrency(parseFloat(metrics?.totalStaked || "0"))}
           icon={Coins}
           change="+2.1% this week"
           trend="up"
@@ -148,7 +149,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              ${(parseFloat(metrics?.insuranceFund || "0") / 1000000).toFixed(2)}M
+              {formatCurrency(parseFloat(metrics?.insuranceFund || "0"))}
             </div>
             <p className="text-sm text-muted-foreground mt-1">
               Protocol solvency buffer

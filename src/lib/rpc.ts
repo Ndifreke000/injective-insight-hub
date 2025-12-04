@@ -299,9 +299,13 @@ async function fetchInsuranceFundData(): Promise<string> {
     const data = await fetchInsuranceFundFromBackend();
 
     console.log(`[RPC] ✓ Fetched ${data.count} insurance funds from backend`);
-    console.log(`[RPC] ✓ Total Insurance Fund: $${data.totalBalance.toFixed(2)}`);
+    console.log(`[RPC] ✓ Raw Total Balance: ${data.totalBalance}`);
 
-    return data.totalBalance.toFixed(2);
+    // Convert from micro-denomination to USD (divide by 1,000,000)
+    const balanceInUSD = data.totalBalance / 1_000_000;
+    console.log(`[RPC] ✓ Converted Insurance Fund: $${balanceInUSD.toFixed(2)}`);
+
+    return balanceInUSD.toFixed(2);
   } catch (error) {
     console.error("[RPC] ✗ Error fetching insurance funds from backend:", error);
     console.warn("[RPC] ⚠ Returning $0 for insurance fund (backend call failed)");
