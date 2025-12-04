@@ -11,7 +11,7 @@ export const config = {
 
     // Injective Endpoints
     injectiveGrpcEndpoint: process.env.INJECTIVE_GRPC_ENDPOINT || 'https://injective-grpc.publicnode.com:443',
-    injectiveRestEndpoint: process.env.INJECTIVE_REST_ENDPOINT || 'https://injective-rpc.publicnode.com:443',
+    injectiveRestEndpoint: process.env.INJECTIVE_REST_ENDPOINT || 'https://sentry.lcd.injective.network:443',
     injectiveIndexerEndpoint: process.env.INJECTIVE_INDEXER_ENDPOINT || 'https://sentry.lcd.injective.network:443',
 
     // Cache TTL (in seconds)

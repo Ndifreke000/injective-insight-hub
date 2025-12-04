@@ -97,7 +97,7 @@ export async function fetchValidators() {
             console.log('[RPC] Fetching validators via REST API...');
             try {
                 // Use REST API instead of gRPC since gRPC fails with content-type error
-                const restEndpoint = config.injectiveRestEndpoint || 'https://injective-rpc.publicnode.com:443';
+                const restEndpoint = config.injectiveRestEndpoint || 'https://sentry.lcd.injective.network:443';
                 const url = `${restEndpoint}/cosmos/staking/v1beta1/validators?status=BOND_STATUS_BONDED`;
 
                 console.log('[RPC] REST URL:', url);
