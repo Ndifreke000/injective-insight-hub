@@ -403,7 +403,7 @@ export default function Markets() {
                       }}
                       formatter={(value: any, name: string) =>
                         name === 'openInterest'
-                          ? [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`, 'Open Interest']
+                          ? [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`, 'Open Interest (Est.)']
                           : [`${value.toFixed(4)}%`, 'Funding Rate']
                       }
                     />
