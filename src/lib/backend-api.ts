@@ -1,7 +1,8 @@
 // Backend API client for Injective Insight Hub
 //This module provides functions to fetch data from the backend server
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:3001' : 'https://injective-lr43.onrender.com');
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ||
+    (import.meta.env.DEV ? 'http://localhost:3001' : 'https://injective-lr43.onrender.com');
 
 export interface BackendResponse<T> {
     success: boolean;
