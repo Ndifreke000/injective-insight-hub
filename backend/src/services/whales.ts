@@ -49,7 +49,7 @@ async function fetchAccountTransactions(
             return [];
         }
 
-        const data = await response.json();
+        const data = await response.json() as any;
         const transactions = data?.data || [];
 
         const parsed: WhaleTransaction[] = transactions.map((tx: any) => {

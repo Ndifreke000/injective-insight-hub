@@ -41,7 +41,7 @@ export async function fetchINJPrice(): Promise<CoinPriceData> {
                 throw new Error(`CoinGecko API error: ${response.status} ${response.statusText}`);
             }
 
-            const data = await response.json();
+            const data = await response.json() as any;
 
             if (!data['injective-protocol']) {
                 throw new Error('Invalid CoinGecko response: missing injective-protocol data');
