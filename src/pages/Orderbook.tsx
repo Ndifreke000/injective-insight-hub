@@ -207,27 +207,60 @@ export default function Orderbook() {
                     <div className="flex justify-between mb-2">
                       <span className="text-sm text-muted-foreground">Total Bid Liquidity</span>
                       <span className="text-sm font-medium">
-                        {book.bids.reduce((sum, b) => sum + parseFloat(b.quantity), 0).toFixed(2)}
+                        {(() => {
+                          const total = book.bids.reduce((sum, b) => sum + parseFloat(b.quantity), 0);
+                          return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                        })()}
                       </span>
                     </div>
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-success" style={{ width: "48%" }} />
+                      <div
+                        className="h-full bg-success"
+                        style={{
+                          width: `${(() => {
+                            const bidTotal = book.bids.reduce((sum, b) => sum + parseFloat(b.quantity), 0);
+                            const askTotal = book.asks.reduce((sum, a) => sum + parseFloat(a.quantity), 0);
+                            const total = bidTotal + askTotal;
+                            return total > 0 ? (bidTotal / total * 100).toFixed(1) : 50;
+                          })()}%`
+                        }}
+                      />
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between mb-2">
                       <span className="text-sm text-muted-foreground">Total Ask Liquidity</span>
                       <span className="text-sm font-medium">
-                        {book.asks.reduce((sum, a) => sum + parseFloat(a.quantity), 0).toFixed(2)}
+                        {(() => {
+                          const total = book.asks.reduce((sum, a) => sum + parseFloat(a.quantity), 0);
+                          return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                        })()}
                       </span>
                     </div>
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-destructive" style={{ width: "52%" }} />
+                      <div
+                        className="h-full bg-destructive"
+                        style={{
+                          width: `${(() => {
+                            const bidTotal = book.bids.reduce((sum, b) => sum + parseFloat(b.quantity), 0);
+                            const askTotal = book.asks.reduce((sum, a) => sum + parseFloat(a.quantity), 0);
+                            const total = bidTotal + askTotal;
+                            return total > 0 ? (askTotal / total * 100).toFixed(1) : 50;
+                          })()}%`
+                        }}
+                      />
                     </div>
                   </div>
                   <div className="pt-2 border-t">
                     <p className="text-sm text-muted-foreground">
-                      Orderbook is well-balanced with good depth on both sides
+                      {(() => {
+                        const bidTotal = book.bids.reduce((sum, b) => sum + parseFloat(b.quantity), 0);
+                        const askTotal = book.asks.reduce((sum, a) => sum + parseFloat(a.quantity), 0);
+                        const ratio = bidTotal / askTotal;
+                        if (ratio > 1.2) return "Strong buy-side pressure - more bids than asks";
+                        if (ratio < 0.8) return "Strong sell-side pressure - more asks than bids";
+                        return "Orderbook is well-balanced with good depth on both sides";
+                      })()}
                     </p>
                   </div>
                 </div>
@@ -241,27 +274,50 @@ export default function Orderbook() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={[
-                    ...book.bids.reverse().map((b, i) => ({
-                      price: parseFloat(b.price),
-                      bidDepth: book.bids.slice(0, i + 1).reduce((sum, bid) => sum + parseFloat(bid.quantity), 0),
-                      askDepth: null
-                    })),
-                    ...book.asks.map((a, i) => ({
-                      price: parseFloat(a.price),
-                      askDepth: book.asks.slice(0, i + 1).reduce((sum, ask) => sum + parseFloat(ask.quantity), 0),
-                      bidDepth: null
-                    }))
-                  ]}>
+                  <AreaChart data={(() => {
+                    // Sort bids descending (highest to lowest price)
+                    const sortedBids = [...book.bids].sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+                    // Sort asks ascending (lowest to highest price)
+                    const sortedAsks = [...book.asks].sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+
+                    // Calculate cumulative depth for bids (from highest to lowest)
+                    let bidCumulative = 0;
+                    const bidData = sortedBids.map(b => {
+                      bidCumulative += parseFloat(b.quantity);
+                      return {
+                        price: parseFloat(b.price),
+                        bidDepth: bidCumulative,
+                        askDepth: 0
+                      };
+                    }).reverse(); // Reverse to go from low to high price
+
+                    // Calculate cumulative depth for asks (from lowest to highest)
+                    let askCumulative = 0;
+                    const askData = sortedAsks.map(a => {
+                      askCumulative += parseFloat(a.quantity);
+                      return {
+                        price: parseFloat(a.price),
+                        askDepth: askCumulative,
+                        bidDepth: 0
+                      };
+                    });
+
+                    // Combine and sort by price
+                    return [...bidData, ...askData].sort((a, b) => a.price - b.price);
+                  })()}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis
                       dataKey="price"
                       className="text-xs"
                       tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      domain={['dataMin', 'dataMax']}
+                      tickFormatter={(value) => `$${value.toFixed(2)}`}
                     />
                     <YAxis
                       className="text-xs"
                       tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      label={{ value: 'Cumulative Depth', angle: -90, position: 'insideLeft' }}
+                      tickFormatter={(value) => value.toLocaleString()}
                     />
                     <Tooltip
                       contentStyle={{
@@ -269,6 +325,14 @@ export default function Orderbook() {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px'
                       }}
+                      formatter={(value: any, name: string) => {
+                        if (value === 0) return null;
+                        return [
+                          `${parseFloat(value).toLocaleString(undefined, { maximumFractionDigits: 2 })} INJ`,
+                          name === 'bidDepth' ? 'Bid Depth' : 'Ask Depth'
+                        ];
+                      }}
+                      labelFormatter={(label) => `Price: $${parseFloat(label).toFixed(2)}`}
                     />
                     <Area
                       type="stepAfter"
@@ -276,6 +340,7 @@ export default function Orderbook() {
                       stroke="hsl(var(--success))"
                       fill="hsl(var(--success) / 0.2)"
                       strokeWidth={2}
+                      connectNulls={false}
                     />
                     <Area
                       type="stepBefore"
@@ -283,6 +348,7 @@ export default function Orderbook() {
                       stroke="hsl(var(--destructive))"
                       fill="hsl(var(--destructive) / 0.2)"
                       strokeWidth={2}
+                      connectNulls={false}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
