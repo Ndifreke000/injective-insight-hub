@@ -104,7 +104,7 @@ export async function fetchSpotMarkets() {
 export async function calculate24hVolume() {
   console.log('[RPC] Getting 24h volume from CoinGecko...');
 
-  const { fetchInjectiveStats } = await import('./coingecko');
+  const { fetchInjectiveStats } = await import('./coingecko.js');
   const stats = await fetchInjectiveStats();
 
   const totalVolume = stats.totalVolume24h;
@@ -126,7 +126,7 @@ export async function calculate24hVolume() {
 export async function calculateOpenInterest() {
   console.log('[RPC] Getting open interest from CoinGecko...');
 
-  const { fetchInjectiveStats } = await import('./coingecko');
+  const { fetchInjectiveStats } = await import('./coingecko.js');
   const stats = await fetchInjectiveStats();
 
   const estimatedOI = stats.marketCap * 0.10;
@@ -144,7 +144,7 @@ export async function calculateOpenInterest() {
  */
 export async function fetchPositions(marketId?: string) {
   console.log('[RPC] Fetching positions...');
-  
+
   // If no marketId provided, try to find INJ/USDT PERP
   if (!marketId) {
     const markets = await fetchDerivativeMarkets();
