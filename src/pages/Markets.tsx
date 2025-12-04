@@ -196,34 +196,48 @@ export default function Markets() {
               <CardTitle>Spread Distribution Across Spot Markets</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={filteredSpotMarkets.map(m => ({
-                  market: m.market,
-                  spread: parseFloat(m.spread),
-                  spreadPct: (parseFloat(m.spread) / parseFloat(m.bestBid)) * 100
-                }))}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis
-                    dataKey="market"
-                    className="text-xs"
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <YAxis
-                    className="text-xs"
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    tickFormatter={(value) => `${value.toFixed(2)}%`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                    formatter={(value: any) => `${value.toFixed(3)}%`}
-                  />
-                  <Bar dataKey="spreadPct" fill="hsl(var(--primary))" name="Spread %" />
-                </BarChart>
-              </ResponsiveContainer>
+              {filteredSpotMarkets.length === 0 ? (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  No data available for chart
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={filteredSpotMarkets
+                    .filter(m => parseFloat(m.spread) > 0 && parseFloat(m.bestBid) > 0)
+                    .map(m => ({
+                      market: m.market,
+                      spread: parseFloat(m.spread),
+                      spreadPct: (parseFloat(m.spread) / parseFloat(m.bestBid)) * 100
+                    }))
+                    .sort((a, b) => b.spreadPct - a.spreadPct)
+                    .slice(0, 10)
+                  }>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis
+                      dataKey="market"
+                      className="text-xs"
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis
+                      className="text-xs"
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      tickFormatter={(value) => `${value.toFixed(2)}%`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: any) => [`${value.toFixed(3)}%`, 'Spread %']}
+                    />
+                    <Bar dataKey="spreadPct" fill="hsl(var(--primary))" name="Spread %" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
 
@@ -303,26 +317,42 @@ export default function Markets() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPerpMarkets.map((market, index) => {
-                      const fundingRate = parseFloat(market.fundingRate);
+                    {filteredPerpMarkets.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          No perpetual markets found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredPerpMarkets.map((market, index) => {
+                        const fundingRate = parseFloat(market.fundingRate);
+                        const markPrice = parseFloat(market.markPrice);
+                        const oraclePrice = parseFloat(market.oraclePrice);
+                        const openInterest = parseFloat(market.openInterest);
 
-                      return (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">{market.market}</TableCell>
-                          <TableCell>${parseFloat(market.markPrice).toLocaleString()}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            ${parseFloat(market.oraclePrice).toLocaleString()}
-                          </TableCell>
-                          <TableCell className={fundingRate > 0 ? "text-success" : "text-destructive"}>
-                            {(fundingRate * 100).toFixed(4)}%
-                          </TableCell>
-                          <TableCell>
-                            ${(parseFloat(market.openInterest) / 1000000).toFixed(2)}M
-                          </TableCell>
-                          <TableCell>{market.leverage}x</TableCell>
-                        </TableRow>
-                      );
-                    })}
+                        return (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{market.market}</TableCell>
+                            <TableCell>
+                              {markPrice > 0 ? `$${markPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {oraclePrice > 0 ? `$${oraclePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A'}
+                            </TableCell>
+                            <TableCell className={fundingRate > 0 ? "text-success" : "text-destructive"}>
+                              {(fundingRate * 100).toFixed(4)}%
+                            </TableCell>
+                            <TableCell>
+                              {openInterest > 0
+                                ? `$${(openInterest / 1000000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`
+                                : 'N/A'
+                              }
+                            </TableCell>
+                            <TableCell>{market.leverage}x</TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -335,36 +365,52 @@ export default function Markets() {
               <CardTitle>Open Interest Distribution</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={filteredPerpMarkets.map(m => ({
-                  market: m.market,
-                  openInterest: parseFloat(m.openInterest) / 1000000,
-                  fundingRate: parseFloat(m.fundingRate) * 100
-                }))}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis
-                    dataKey="market"
-                    className="text-xs"
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <YAxis
-                    className="text-xs"
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    tickFormatter={(value) => `$${value.toFixed(1)}M`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                    formatter={(value: any, name: string) =>
-                      name === 'openInterest' ? `$${value.toFixed(2)}M` : `${value.toFixed(4)}%`
-                    }
-                  />
-                  <Bar dataKey="openInterest" fill="hsl(var(--primary))" name="Open Interest (M)" />
-                </BarChart>
-              </ResponsiveContainer>
+              {filteredPerpMarkets.length === 0 ? (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  No data available for chart
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={filteredPerpMarkets
+                    .filter(m => parseFloat(m.openInterest) > 0)
+                    .map(m => ({
+                      market: m.market,
+                      openInterest: parseFloat(m.openInterest) / 1000000,
+                      fundingRate: parseFloat(m.fundingRate) * 100
+                    }))
+                    .sort((a, b) => b.openInterest - a.openInterest)
+                    .slice(0, 10)
+                  }>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis
+                      dataKey="market"
+                      className="text-xs"
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis
+                      className="text-xs"
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      tickFormatter={(value) => `$${value.toFixed(1)}M`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: any, name: string) =>
+                        name === 'openInterest'
+                          ? [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`, 'Open Interest']
+                          : [`${value.toFixed(4)}%`, 'Funding Rate']
+                      }
+                    />
+                    <Bar dataKey="openInterest" fill="hsl(var(--primary))" name="Open Interest (M)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
 
