@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/MetricCard";
 import { fetchMetrics, MetricsData } from "@/lib/rpc";
-import { Coins, Users, Shield } from "lucide-react";
+import { Coins, Users, Shield, DollarSign } from "lucide-react";
 import { PageLoadingSkeleton } from "@/components/LoadingSkeleton";
 import { DataSourceIndicator } from "@/components/DataSourceIndicator";
 import { RefreshButton } from "@/components/RefreshButton";
@@ -11,6 +11,7 @@ import { EnhancedExportButton } from "@/components/EnhancedExportButton";
 
 export default function Staking() {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
+  const [injPrice, setInjPrice] = useState<number>(0);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,8 +19,23 @@ export default function Staking() {
   const loadData = useCallback(async () => {
     setError(null);
     try {
-      const data = await fetchMetrics();
-      setMetrics(data);
+      // Fetch metrics and INJ price in parallel
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+      const [metricsData, priceRes] = await Promise.all([
+        fetchMetrics(),
+        fetch(`${backendUrl}/api/price/inj/usd`).catch(() => null)
+      ]);
+
+      setMetrics(metricsData);
+
+      // Get INJ price
+      if (priceRes && priceRes.ok) {
+        const priceData = await priceRes.json();
+        if (priceData.success && priceData.price) {
+          setInjPrice(priceData.price);
+        }
+      }
+
       setLastUpdated(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load staking data");
@@ -30,6 +46,10 @@ export default function Staking() {
 
   useEffect(() => {
     loadData();
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
   }, [loadData]);
 
   if (loading && !metrics) {
@@ -45,13 +65,18 @@ export default function Staking() {
     );
   }
 
-  // Calculate bonding ratio (assuming 100M total supply as standard for Injective)
+  // Calculate bonding ratio (total supply is ~100M INJ)
   const totalSupply = 100000000; // 100M INJ
   const stakedINJ = parseFloat(metrics?.totalStaked || "0");
   const bondingRatio = ((stakedINJ / totalSupply) * 100).toFixed(1);
 
+  // Calculate USD value (INJ amount * INJ price)
+  const stakedUSD = stakedINJ * (injPrice || 5.70); // Fallback to ~$5.70 if price not loaded
+
   const exportData = {
-    totalStaked: stakedINJ,
+    totalStakedINJ: stakedINJ,
+    totalStakedUSD: stakedUSD,
+    injPrice: injPrice,
     activeValidators: metrics?.activeValidators,
     bondingRatio,
     lastUpdated: lastUpdated.toISOString(),
@@ -66,9 +91,9 @@ export default function Staking() {
         </div>
         <div className="flex gap-2">
           <RefreshButton onRefresh={loadData} />
-          <EnhancedExportButton 
-            data={exportData} 
-            filename="staking-data" 
+          <EnhancedExportButton
+            data={exportData}
+            filename="staking-data"
             exportType="staking"
           />
         </div>
@@ -85,14 +110,21 @@ export default function Staking() {
         source={`${metrics?.activeValidators || 0} Validators • ${bondingRatio}% Bonded`}
       />
 
-      {/* Key Metrics - RPC Data Only */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Key Metrics */}
+      <div className="grid gap-4 md:grid-cols-4">
         <MetricCard
-          title="Total Staked INJ"
-          value={`$${(stakedINJ / 1000000).toFixed(2)}M`}
-          icon={Coins}
-          change={`${bondingRatio}% of supply`}
+          title="Total Staked Value"
+          value={`$${(stakedUSD / 1000000).toFixed(2)}M`}
+          icon={DollarSign}
+          change={`${(stakedINJ / 1000000).toFixed(2)}M INJ`}
           trend="up"
+        />
+        <MetricCard
+          title="INJ Price"
+          value={injPrice > 0 ? `$${injPrice.toFixed(2)}` : 'Loading...'}
+          icon={Coins}
+          change="Live price"
+          trend="neutral"
         />
         <MetricCard
           title="Active Validators"
@@ -134,9 +166,9 @@ export default function Staking() {
 
             <div className="grid gap-4 md:grid-cols-3">
               <div>
-                <div className="text-sm text-muted-foreground mb-1">Bonded Tokens</div>
+                <div className="text-sm text-muted-foreground mb-1">Bonded Value</div>
                 <div className="text-2xl font-bold">
-                  ${(stakedINJ / 1000000).toFixed(2)}M
+                  ${(stakedUSD / 1000000).toFixed(2)}M
                 </div>
               </div>
               <div>
