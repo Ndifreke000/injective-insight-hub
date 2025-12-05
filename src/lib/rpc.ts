@@ -358,9 +358,10 @@ export async function fetchMetrics(): Promise<MetricsData> {
       console.log(`[fetchMetrics] ✓ Real 24h volume: Spot $${(parseFloat(realVolume.spot) / 1e6).toFixed(2)}M, Deriv $${(parseFloat(realVolume.derivative) / 1e6).toFixed(2)}M`);
     } catch (e) {
       console.warn('[fetchMetrics] ⚠ Failed to fetch real volume from backend, using estimates');
+      // Estimate based on market count if backend fails
       realVolume = {
-        spot: (spotMarketsArr.length * 2000000).toString(),
-        derivative: (derivMarkets.length * 11800000).toString()
+        spot: (spotMarketsArr.length * 500000).toString(), // Conservative estimate
+        derivative: (derivMarkets.length * 2000000).toString()
       };
     }
 
@@ -371,7 +372,7 @@ export async function fetchMetrics(): Promise<MetricsData> {
       console.log(`[fetchMetrics] ✓ Real open interest: $${(parseFloat(realOI) / 1e6).toFixed(2)}M`);
     } catch (e) {
       console.warn('[fetchMetrics] ⚠ Failed to fetch real OI from backend, using estimate');
-      realOI = (derivMarkets.length * 8800000).toString();
+      realOI = (derivMarkets.length * 1000000).toString();
     }
 
     // Calculate total transactions from block history
@@ -388,8 +389,6 @@ export async function fetchMetrics(): Promise<MetricsData> {
       insuranceFund: insuranceFund,
       spotVolume24h: realVolume.spot,
       derivativesVolume24h: realVolume.derivative
-      // Removed fields - no API available:
-      // liquidationVolume24h, uniqueTraders24h, ibcInflows24h, ibcOutflows24h
     };
 
     console.log("[fetchMetrics] Returning metrics:", result);
@@ -404,10 +403,10 @@ export async function fetchMetrics(): Promise<MetricsData> {
       tps: 0,
       avgBlockTime: 0.7,
       totalStaked: "100000000",
-      openInterest: "624800000", // 71 markets * 8.8M
-      insuranceFund: "45230000",
-      spotVolume24h: "276000000", // 138 markets * 2M
-      derivativesVolume24h: "837800000" // 71 markets * 11.8M
+      openInterest: "0",
+      insuranceFund: "0",
+      spotVolume24h: "0",
+      derivativesVolume24h: "0"
     };
   }
 }
