@@ -45,28 +45,27 @@ export function AppSidebar() {
 
   return (
     <Sidebar 
-      className={isCollapsed ? "w-16" : "w-64"} 
+      className={`${isCollapsed ? "w-16" : "w-60"} bg-sidebar-background border-r border-sidebar-border`} 
       collapsible="icon"
-      style={{ background: 'var(--gradient-sidebar)' }}
     >
-      <SidebarHeader className="border-b border-sidebar-border/50 h-16 flex items-center px-4">
+      <SidebarHeader className="h-14 flex items-center px-4 border-b border-sidebar-border">
         {!isCollapsed ? (
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <div className="relative">
-                <img src="/injective-logo.png" alt="Injective" className="h-8 w-8 rounded-lg" />
-                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success border-2 border-sidebar-background" />
+                <img src="/injective-logo.png" alt="Injective" className="h-7 w-7 rounded-md" />
+                <div className="absolute -bottom-0.5 -right-0.5 status-online" />
               </div>
-              <div>
-                <h2 className="text-base font-semibold text-sidebar-foreground">Injective</h2>
-                <span className="text-[10px] uppercase tracking-widest text-sidebar-foreground/50">Intelligence</span>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-sidebar-foreground leading-tight">Injective</span>
+                <span className="text-[9px] uppercase tracking-widest text-sidebar-muted">Intelligence</span>
               </div>
             </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              className="h-8 w-8 text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-md"
               title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
             >
               {theme === "light" ? (
@@ -78,32 +77,32 @@ export function AppSidebar() {
           </div>
         ) : (
           <div className="relative mx-auto">
-            <img src="/injective-logo.png" alt="Injective" className="h-8 w-8 rounded-lg" />
-            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success border-2 border-sidebar-background" />
+            <img src="/injective-logo.png" alt="Injective" className="h-7 w-7 rounded-md" />
+            <div className="absolute -bottom-0.5 -right-0.5 status-online" />
           </div>
         )}
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-4">
+      <SidebarContent className="px-2 py-3">
         <SidebarGroup>
           {!isCollapsed && (
-            <span className="px-3 mb-3 text-[10px] font-medium uppercase tracking-widest text-sidebar-foreground/40">
+            <span className="px-3 mb-2 text-[10px] font-medium uppercase tracking-widest text-sidebar-muted">
               Analytics
             </span>
           )}
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
+            <SidebarMenu className="space-y-0.5">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
                       end
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-all duration-200"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors duration-150"
                       activeClassName="nav-active"
                     >
-                      <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
-                      {!isCollapsed && <span className="text-sm">{item.title}</span>}
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
+                      {!isCollapsed && <span className="text-[13px]">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
