@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { config } from './config.js';
 import { getCacheStats } from './cache.js';
-import { fetchINJPrice, getINJPriceUSD } from './services/coingecko.js';
+import { fetchINJPrice, getINJPriceUSD, fetchCryptoPrices } from './services/coingecko.js';
 import {
     fetchInsuranceFunds,
     fetchValidators,
@@ -91,6 +91,29 @@ app.get('/api/price/inj/usd', async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error('[API] Error fetching INJ price:', error);
+        res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+});
+
+/**
+ * GET /api/price/crypto
+ * Fetch prices for multiple cryptocurrencies (used for derivatives/markets)
+ */
+app.get('/api/price/crypto', async (req: Request, res: Response) => {
+    try {
+        const prices = await fetchCryptoPrices();
+        res.json({
+            success: true,
+            data: prices,
+            count: Object.keys(prices).filter(k => prices[k] > 0).length,
+            cached: true,
+            cacheTTL: 60,
+        });
+    } catch (error) {
+        console.error('[API] Error fetching crypto prices:', error);
         res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error',

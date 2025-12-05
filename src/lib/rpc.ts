@@ -474,11 +474,11 @@ export async function fetchOrderbooks(): Promise<OrderbookData[]> {
   }
 }
 
-// Derivatives cache (60 second TTL for fast repeat loads)
+// Derivatives cache (15 second TTL for fast data refresh)
 const derivativesCache = {
   data: [] as DerivativeData[],
   timestamp: 0,
-  TTL: 60000 // 1 minute
+  TTL: 15000 // 15 seconds
 };
 
 export async function fetchDerivatives(): Promise<DerivativeData[]> {
@@ -514,6 +514,22 @@ export async function fetchDerivatives(): Promise<DerivativeData[]> {
       'DOGE/USDT PERP': 0.03 // 3%
     };
 
+    // Fetch current prices from backend API (bypasses CORS issues)
+    const priceMap: Record<string, number> = {};
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+      const priceRes = await fetch(`${backendUrl}/api/price/crypto`);
+      if (priceRes.ok) {
+        const priceData = await priceRes.json();
+        if (priceData.success && priceData.data) {
+          Object.assign(priceMap, priceData.data);
+          console.log(`[fetchDerivatives] ✓ Fetched prices for ${priceData.count} assets from backend`);
+        }
+      }
+    } catch (e) {
+      console.warn('[fetchDerivatives] Could not fetch prices from backend:', e);
+    }
+
     // Map to DerivativeData with actual data from market objects
     const mappedData = await Promise.all(marketsArray.map(async (market: any) => {
       // Extract market info
@@ -530,17 +546,14 @@ export async function fetchDerivatives(): Promise<DerivativeData[]> {
       let markPrice = convertPrice(market.markPrice || market.price || "0");
       let oraclePrice = convertPrice(market.oraclePrice || market.price || "0");
 
-      // If price is missing for top markets, try to fetch orderbook to get a price
-      if ((markPrice === "0" || markPrice === "0.00") && topTickers.includes(ticker)) {
-        try {
-          // We can't easily fetch single orderbook here without circular dependency or extra imports
-          // But we can try to use a fallback price if we have one, or leave as 0
-          // For now, let's leave as 0, the UI handles it gracefully-ish
-          // Or better, let's try to use the IndexerGrpcDerivativesApi just for this if needed
-          // But that caused issues before.
-          // Let's rely on the fact that sometimes market.price is available
-        } catch (e) {
-          // ignore
+      // If price is missing, try to get from CoinGecko priceMap
+      if (markPrice === "0" || markPrice === "0.00") {
+        // Extract base asset symbol from ticker (e.g., "BTC/USDT PERP" -> "BTC")
+        const baseAsset = ticker.split('/')[0]?.trim();
+        const cgPrice = priceMap[baseAsset] || 0;
+        if (cgPrice > 0) {
+          markPrice = cgPrice.toFixed(2);
+          oraclePrice = cgPrice.toFixed(2);
         }
       }
 

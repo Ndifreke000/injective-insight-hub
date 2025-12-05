@@ -122,3 +122,84 @@ export async function fetchInjectiveStats() {
         300 // 5 minutes cache for stats
     );
 }
+
+/**
+ * Fetch prices for multiple cryptocurrencies from CoinGecko
+ * This is used to populate Mark Price / Oracle Price for derivatives
+ */
+export async function fetchCryptoPrices(): Promise<Record<string, number>> {
+    return cacheWrapper(
+        priceCache,
+        'crypto-prices',
+        async () => {
+            console.log('[CoinGecko] Fetching multi-crypto prices...');
+
+            const ids = [
+                'bitcoin', 'ethereum', 'injective-protocol', 'solana', 'ripple',
+                'dogecoin', 'binancecoin', 'avalanche-2', 'chainlink', 'polkadot',
+                'cardano', 'uniswap', 'aave', 'maker', 'cosmos', 'osmosis',
+                'sei-network', 'pyth-network', 'celestia', 'layerzero', 'sui',
+                'dogwifcoin', 'arbitrum', 'optimism', 'wormhole', 'litecoin',
+                'monero', 'zcash', 'stacks', 'bittensor', 'aptos', 'toncoin', 'pepe'
+            ].join(',');
+
+            const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`;
+
+            const response = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'x-cg-demo-api-key': config.coinGeckoApiKey,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`CoinGecko API error: ${response.status}`);
+            }
+
+            const data = await response.json() as any;
+
+            // Map to ticker symbols
+            const priceMap: Record<string, number> = {
+                'BTC': data.bitcoin?.usd || 0,
+                'ETH': data.ethereum?.usd || 0,
+                'INJ': data['injective-protocol']?.usd || 0,
+                'SOL': data.solana?.usd || 0,
+                'XRP': data.ripple?.usd || 0,
+                'DOGE': data.dogecoin?.usd || 0,
+                'BNB': data.binancecoin?.usd || 0,
+                'AVAX': data['avalanche-2']?.usd || 0,
+                'LINK': data.chainlink?.usd || 0,
+                'DOT': data.polkadot?.usd || 0,
+                'ADA': data.cardano?.usd || 0,
+                'UNI': data.uniswap?.usd || 0,
+                'AAVE': data.aave?.usd || 0,
+                'MKR': data.maker?.usd || 0,
+                'ATOM': data.cosmos?.usd || 0,
+                'OSMO': data.osmosis?.usd || 0,
+                'SEI': data['sei-network']?.usd || 0,
+                'PYTH': data['pyth-network']?.usd || 0,
+                'TIA': data.celestia?.usd || 0,
+                'ZRO': data.layerzero?.usd || 0,
+                'SUI': data.sui?.usd || 0,
+                'WIF': data.dogwifcoin?.usd || 0,
+                'ARB': data.arbitrum?.usd || 0,
+                'OP': data.optimism?.usd || 0,
+                'W': data.wormhole?.usd || 0,
+                'LTC': data.litecoin?.usd || 0,
+                'XMR': data.monero?.usd || 0,
+                'ZEC': data.zcash?.usd || 0,
+                'STX': data.stacks?.usd || 0,
+                'TAO': data.bittensor?.usd || 0,
+                'APT': data.aptos?.usd || 0,
+                'TON': data.toncoin?.usd || 0,
+                'PEPE': data.pepe?.usd || 0,
+            };
+
+            const validCount = Object.values(priceMap).filter(v => v > 0).length;
+            console.log(`[CoinGecko] ✓ Fetched prices for ${validCount} assets`);
+
+            return priceMap;
+        },
+        60 // 1 minute cache for prices
+    );
+}
