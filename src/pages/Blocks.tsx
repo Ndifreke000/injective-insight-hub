@@ -125,8 +125,8 @@ export default function Blocks() {
 
       const fetchedBlocks = await Promise.all(blockPromises);
       const validBlocks = blockData
-        ? [blockData, ...fetchedBlocks.filter((b): b is BlockData => b !== null)]
-        : fetchedBlocks.filter((b): b is BlockData => b !== null);
+        ? [blockData, ...fetchedBlocks.filter((b): b is NonNullable<typeof b> => b !== null)]
+        : fetchedBlocks.filter((b): b is NonNullable<typeof b> => b !== null);
       setBlocks(validBlocks);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load block data");

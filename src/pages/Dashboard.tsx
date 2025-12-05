@@ -51,8 +51,11 @@ export default function Dashboard() {
 
   if (error && !metrics) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Injective Intelligence Dashboard</h1>
+      <div className="space-y-8 p-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">Real-time blockchain intelligence</p>
+        </div>
         <ErrorState message={error} onRetry={loadData} />
       </div>
     );
@@ -67,11 +70,12 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-start">
+    <div className="space-y-8 p-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Injective Intelligence Dashboard</h1>
-          <p className="text-muted-foreground">Real-time blockchain analytics and risk monitoring</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">Real-time blockchain intelligence</p>
         </div>
         <div className="flex gap-2">
           <RefreshButton onRefresh={loadData} />
@@ -84,36 +88,36 @@ export default function Dashboard() {
       </div>
 
       {error && (
-        <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">
-          Warning: {error} - Showing cached data
+        <div className="text-sm text-warning bg-warning/10 border border-warning/20 px-4 py-3 rounded-lg">
+          {error} — Showing cached data
         </div>
       )}
 
-      {/* Key Metrics Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Key Metrics */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Block Height"
-          value={metrics?.blockHeight.toLocaleString() || "0"}
+          value={metrics?.blockHeight.toLocaleString() || "—"}
           icon={Activity}
           change="+1.2% from last hour"
           trend="up"
         />
         <MetricCard
-          title="Transactions Per Second"
-          value={metrics?.tps || 0}
+          title="TPS"
+          value={metrics?.tps || "—"}
           icon={Zap}
-          change={`${metrics?.avgBlockTime.toFixed(2) || "0"}s avg block time`}
+          change={`${metrics?.avgBlockTime.toFixed(2) || "—"}s avg block`}
           trend="neutral"
         />
         <MetricCard
-          title="Active Validators"
-          value={metrics?.activeValidators || 0}
+          title="Validators"
+          value={metrics?.activeValidators || "—"}
           icon={Users}
           change="Network healthy"
           trend="up"
         />
         <MetricCard
-          title="Total Staked INJ"
+          title="Total Staked"
           value={formatCurrency(parseFloat(metrics?.totalStaked || "0"))}
           icon={Coins}
           change="+2.1% this week"
@@ -121,94 +125,94 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Financial Safety Overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-primary" />
+      {/* Financial Overview */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Card className="hover-lift">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+              <PieChart className="h-4 w-4 text-primary" />
               Open Interest
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
+            <div className="metric-value text-foreground">
               ${(parseFloat(metrics?.openInterest || "0") / 1000000).toFixed(2)}M
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-2">
               Across all derivative markets
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-success" />
+        <Card className="hover-lift">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+              <Shield className="h-4 w-4 text-success" />
               Insurance Fund
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
+            <div className="metric-value text-foreground">
               {formatCurrency(parseFloat(metrics?.insuranceFund || "0"))}
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-2">
               Protocol solvency buffer
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-warning" />
+        <Card className="hover-lift">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+              <AlertCircle className="h-4 w-4 text-warning" />
               Risk Buffer
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{riskBuffer}%</div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <div className="metric-value text-foreground">{riskBuffer}%</div>
+            <p className="text-xs text-muted-foreground mt-2">
               Insurance ÷ Open Interest
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Trading Activity */}
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Trading & Risk */}
+      <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
               24h Trading Volume
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm text-muted-foreground">Spot Markets</span>
-                <span className="text-sm font-medium">
+              <div className="flex justify-between mb-2">
+                <span className="text-xs text-muted-foreground">Spot Markets</span>
+                <span className="text-sm font-mono font-medium">
                   ${(parseFloat(metrics?.spotVolume24h || "0") / 1000000).toFixed(2)}M
                 </span>
               </div>
-              <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                <div className="h-full bg-primary" style={{ width: "40%" }} />
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: "40%" }} />
               </div>
             </div>
             <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm text-muted-foreground">Derivatives</span>
-                <span className="text-sm font-medium">
+              <div className="flex justify-between mb-2">
+                <span className="text-xs text-muted-foreground">Derivatives</span>
+                <span className="text-sm font-mono font-medium">
                   ${(parseFloat(metrics?.derivativesVolume24h || "0") / 1000000).toFixed(2)}M
                 </span>
               </div>
-              <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                <div className="h-full bg-accent" style={{ width: "60%" }} />
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: "60%" }} />
               </div>
             </div>
-            <div className="pt-2 border-t">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Total Volume</span>
-                <span className="text-lg font-bold">
+            <div className="pt-3 border-t border-border/50">
+              <div className="flex justify-between items-baseline">
+                <span className="text-xs text-muted-foreground">Total Volume</span>
+                <span className="text-lg font-mono font-semibold">
                   ${((parseFloat(metrics?.spotVolume24h || "0") + parseFloat(metrics?.derivativesVolume24h || "0")) / 1000000).toFixed(2)}M
                 </span>
               </div>
@@ -217,16 +221,16 @@ export default function Dashboard() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>System Risk Overview</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">System Risk Overview</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {riskMetrics.slice(0, 5).map((metric) => (
-                <div key={metric.category} className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{metric.category}</div>
-                    <div className="text-xs text-muted-foreground">{metric.description}</div>
+                <div key={metric.category} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{metric.category}</div>
+                    <div className="text-xs text-muted-foreground truncate">{metric.description}</div>
                   </div>
                   <RiskBadge level={metric.level} />
                 </div>

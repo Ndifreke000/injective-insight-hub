@@ -1,114 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Injective Intelligence Platform - Refined Design System
+   A sophisticated, data-driven aesthetic with warmth and depth */
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    /* Warm light theme with subtle depth */
+    --background: 40 25% 97%;
+    --foreground: 220 20% 18%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card: 40 20% 99%;
+    --card-foreground: 220 20% 18%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover: 40 20% 99%;
+    --popover-foreground: 220 20% 18%;
 
-    --primary: 195 85% 45%;
+    /* Injective brand cyan with warmth */
+    --primary: 185 75% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 15% 92%;
-    --secondary-foreground: 215 25% 15%;
+    --secondary: 40 15% 92%;
+    --secondary-foreground: 220 20% 25%;
 
-    --muted: 210 15% 95%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 40 12% 90%;
+    --muted-foreground: 220 12% 50%;
 
-    --accent: 180 65% 50%;
+    --accent: 165 55% 45%;
     --accent-foreground: 0 0% 100%;
 
-    --success: 145 65% 45%;
+    --success: 155 60% 40%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 45 95% 55%;
-    --warning-foreground: 215 25% 15%;
+    --warning: 35 90% 52%;
+    --warning-foreground: 220 20% 15%;
 
-    --destructive: 0 75% 55%;
+    --destructive: 0 65% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 88%;
-    --input: 215 20% 88%;
-    --ring: 195 85% 45%;
+    --border: 40 15% 85%;
+    --input: 40 15% 88%;
+    --ring: 185 75% 42%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --chart-1: 195 85% 45%;
-    --chart-2: 180 65% 50%;
-    --chart-3: 145 65% 45%;
-    --chart-4: 45 95% 55%;
-    --chart-5: 0 75% 55%;
+    /* Chart colors - warm spectrum */
+    --chart-1: 185 75% 42%;
+    --chart-2: 165 55% 45%;
+    --chart-3: 155 60% 40%;
+    --chart-4: 35 90% 52%;
+    --chart-5: 0 65% 52%;
 
-    --sidebar-background: 215 25% 15%;
-    --sidebar-foreground: 210 15% 85%;
-    --sidebar-primary: 195 85% 45%;
+    /* Sidebar - dark contrast */
+    --sidebar-background: 220 25% 12%;
+    --sidebar-foreground: 40 15% 88%;
+    --sidebar-primary: 185 75% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 20% 20%;
-    --sidebar-accent-foreground: 210 15% 85%;
-    --sidebar-border: 215 20% 25%;
-    --sidebar-ring: 195 85% 45%;
+    --sidebar-accent: 220 20% 18%;
+    --sidebar-accent-foreground: 40 15% 92%;
+    --sidebar-border: 220 20% 20%;
+    --sidebar-ring: 185 75% 50%;
+
+    /* Custom gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(185 75% 42%), hsl(165 55% 45%));
+    --gradient-card: linear-gradient(180deg, hsl(40 20% 99%), hsl(40 15% 96%));
+    --gradient-sidebar: linear-gradient(180deg, hsl(220 25% 12%), hsl(220 30% 8%));
   }
 
   .dark {
-    --background: 215 30% 8%;
-    --foreground: 210 15% 92%;
+    /* Rich dark theme with depth */
+    --background: 225 25% 8%;
+    --foreground: 40 15% 92%;
 
-    --card: 215 25% 12%;
-    --card-foreground: 210 15% 92%;
+    --card: 225 22% 11%;
+    --card-foreground: 40 15% 92%;
 
-    --popover: 215 25% 12%;
-    --popover-foreground: 210 15% 92%;
+    --popover: 225 22% 11%;
+    --popover-foreground: 40 15% 92%;
 
-    --primary: 195 85% 55%;
-    --primary-foreground: 215 30% 8%;
+    --primary: 185 80% 55%;
+    --primary-foreground: 225 25% 8%;
 
-    --secondary: 215 20% 18%;
-    --secondary-foreground: 210 15% 92%;
+    --secondary: 225 18% 16%;
+    --secondary-foreground: 40 15% 88%;
 
-    --muted: 215 20% 15%;
-    --muted-foreground: 215 15% 55%;
+    --muted: 225 18% 14%;
+    --muted-foreground: 220 12% 55%;
 
-    --accent: 180 65% 45%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 165 60% 48%;
+    --accent-foreground: 225 25% 8%;
 
-    --success: 145 65% 50%;
-    --success-foreground: 0 0% 100%;
+    --success: 155 65% 48%;
+    --success-foreground: 225 25% 8%;
 
-    --warning: 45 95% 60%;
-    --warning-foreground: 215 30% 8%;
+    --warning: 35 95% 58%;
+    --warning-foreground: 225 25% 8%;
 
-    --destructive: 0 75% 60%;
+    --destructive: 0 70% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 22%;
-    --input: 215 20% 22%;
-    --ring: 195 85% 55%;
+    --border: 225 18% 18%;
+    --input: 225 18% 18%;
+    --ring: 185 80% 55%;
 
-    --chart-1: 195 85% 55%;
-    --chart-2: 180 65% 55%;
-    --chart-3: 145 65% 55%;
-    --chart-4: 45 95% 65%;
-    --chart-5: 0 75% 65%;
+    /* Chart colors - vibrant for dark */
+    --chart-1: 185 80% 55%;
+    --chart-2: 165 60% 52%;
+    --chart-3: 155 65% 52%;
+    --chart-4: 35 95% 62%;
+    --chart-5: 0 70% 62%;
 
-    --sidebar-background: 215 30% 10%;
-    --sidebar-foreground: 210 15% 85%;
-    --sidebar-primary: 195 85% 55%;
-    --sidebar-primary-foreground: 215 30% 8%;
-    --sidebar-accent: 215 25% 15%;
-    --sidebar-accent-foreground: 210 15% 85%;
-    --sidebar-border: 215 20% 18%;
-    --sidebar-ring: 195 85% 55%;
+    /* Sidebar - deeper dark */
+    --sidebar-background: 225 30% 6%;
+    --sidebar-foreground: 40 15% 88%;
+    --sidebar-primary: 185 80% 55%;
+    --sidebar-primary-foreground: 225 30% 6%;
+    --sidebar-accent: 225 25% 12%;
+    --sidebar-accent-foreground: 40 15% 92%;
+    --sidebar-border: 225 20% 14%;
+    --sidebar-ring: 185 80% 55%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(185 80% 55%), hsl(165 60% 48%));
+    --gradient-card: linear-gradient(180deg, hsl(225 22% 11%), hsl(225 25% 9%));
+    --gradient-sidebar: linear-gradient(180deg, hsl(225 30% 6%), hsl(225 35% 4%));
   }
 }
 
@@ -117,7 +134,83 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Monospace for data/numbers */
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer components {
+  /* Refined card styling */
+  .card-elevated {
+    @apply bg-card border border-border/60 shadow-sm;
+    background: var(--gradient-card);
+  }
+
+  /* Subtle glow for important elements */
+  .glow-primary {
+    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.25);
+  }
+
+  /* Data label styling */
+  .data-label {
+    @apply text-xs font-medium uppercase tracking-wider text-muted-foreground;
+  }
+
+  /* Large metric values */
+  .metric-value {
+    @apply text-2xl font-semibold tracking-tight font-mono;
+  }
+
+  /* Interactive hover */
+  .hover-lift {
+    @apply transition-all duration-200;
+  }
+  .hover-lift:hover {
+    @apply -translate-y-0.5 shadow-md;
+  }
+
+  /* Status indicators */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+  .status-dot-success {
+    @apply bg-success shadow-[0_0_8px_hsl(var(--success)/0.5)];
+  }
+  .status-dot-warning {
+    @apply bg-warning shadow-[0_0_8px_hsl(var(--warning)/0.5)];
+  }
+  .status-dot-error {
+    @apply bg-destructive shadow-[0_0_8px_hsl(var(--destructive)/0.5)];
+  }
+
+  /* Sidebar active state */
+  .nav-active {
+    @apply bg-sidebar-accent text-sidebar-primary font-medium;
+    border-left: 3px solid hsl(var(--sidebar-primary));
+  }
+}
+
+@layer utilities {
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  /* Subtle text gradient */
+  .text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
