@@ -39,7 +39,7 @@ export default function Blocks() {
           return null;
         }),
       ]);
-      
+
       if (blockData) setLatestBlock(blockData);
       if (metricsData) setMetrics(metricsData);
 
@@ -50,25 +50,57 @@ export default function Blocks() {
       }
 
       // Fetch previous 9 blocks in PARALLEL with short timeout
-      const injPrice = 5.30;
+      // Use fallback RPC endpoints for reliability
+      const RPC_ENDPOINTS = [
+        'https://injective-rpc.publicnode.com',
+        'https://sentry.tm.injective.network:443'
+      ];
+
+      // Get real INJ price from backend, fallback to estimate
+      let injPrice = 5.30;
+      try {
+        const priceRes = await fetch('http://localhost:3001/api/price/inj/usd');
+        if (priceRes.ok) {
+          const priceData = await priceRes.json();
+          injPrice = priceData.price || 5.30;
+        }
+      } catch {
+        console.warn('[Blocks] Using fallback INJ price');
+      }
+
       const INJECTIVE_BLOCK_GAS_LIMIT = 50_000_000;
       const INJECTIVE_GAS_PRICE = 160_000_000;
       const INJ_DECIMALS = 1e18;
 
-      const blockPromises = Array.from({ length: 9 }, (_, i) => {
+      // Helper to fetch with fallback
+      const fetchWithFallback = async (path: string) => {
+        for (const endpoint of RPC_ENDPOINTS) {
+          try {
+            const res = await fetch(`${endpoint}${path}`, {
+              signal: AbortSignal.timeout(4000)
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data?.result) return data;
+            }
+          } catch {
+            continue; // Try next endpoint
+          }
+        }
+        return null;
+      };
+
+      const blockPromises = Array.from({ length: 9 }, async (_, i) => {
         const height = currentHeight - (i + 1);
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
-        
-        return Promise.all([
-          fetch(`https://sentry.tm.injective.network:443/block?height=${height}`, { signal: controller.signal })
-            .then(r => r.json()).catch(() => null),
-          fetch(`https://sentry.tm.injective.network:443/block_results?height=${height}`, { signal: controller.signal })
-            .then(r => r.json()).catch(() => null)
-        ]).then(([blockRes, resultsRes]) => {
-          clearTimeout(timeout);
+
+        try {
+          const [blockRes, resultsRes] = await Promise.all([
+            fetchWithFallback(`/block?height=${height}`),
+            fetchWithFallback(`/block_results?height=${height}`)
+          ]);
+
           if (!blockRes?.result) return null;
-          
+
           const txsResults = resultsRes?.result?.txs_results || [];
           const totalGasUsed = txsResults.reduce((sum: number, tx: any) => sum + parseInt(tx.gas_used || "0"), 0);
           const gasPercentage = parseFloat(((totalGasUsed / INJECTIVE_BLOCK_GAS_LIMIT) * 100).toFixed(2));
@@ -86,11 +118,13 @@ export default function Blocks() {
             gasFeeINJ: feeINJ,
             gasFeeUSDT: feeUSDT,
           };
-        }).catch(() => null);
+        } catch {
+          return null;
+        }
       });
 
       const fetchedBlocks = await Promise.all(blockPromises);
-      const validBlocks = blockData 
+      const validBlocks = blockData
         ? [blockData, ...fetchedBlocks.filter((b): b is BlockData => b !== null)]
         : fetchedBlocks.filter((b): b is BlockData => b !== null);
       setBlocks(validBlocks);
@@ -104,6 +138,13 @@ export default function Blocks() {
 
   useEffect(() => {
     loadData();
+
+    // Auto-refresh every 10 seconds to keep data fresh
+    const interval = setInterval(() => {
+      loadData();
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [loadData]);
 
   if (loading && !latestBlock) {
@@ -229,7 +270,7 @@ export default function Blocks() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-              {blocks.map((block, index) => (
+                {blocks.map((block, index) => (
                   <TableRow key={index}>
                     <TableCell className="font-medium">{block.height}</TableCell>
                     <TableCell className="font-mono text-xs">{block.hash.substring(0, 16)}...</TableCell>
@@ -269,12 +310,24 @@ export default function Blocks() {
               <span className="text-sm text-muted-foreground">Active Validators</span>
               <span className="text-2xl font-bold">{displayMetrics.activeValidators}</span>
             </div>
-            <div className="h-2 bg-secondary rounded-full overflow-hidden">
-              <div className="h-full bg-success" style={{ width: "95%" }} />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              95% participation rate - Network is healthy
-            </p>
+            {(() => {
+              // Injective has a max of ~50 active validators in the active set
+              const maxValidators = 50;
+              const participationRate = Math.min(100, Math.round((displayMetrics.activeValidators / maxValidators) * 100));
+              const healthStatus = participationRate >= 90 ? "healthy" : participationRate >= 70 ? "moderate" : "degraded";
+              const barColor = participationRate >= 90 ? "bg-success" : participationRate >= 70 ? "bg-yellow-500" : "bg-destructive";
+
+              return (
+                <>
+                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                    <div className={`h-full ${barColor}`} style={{ width: `${participationRate}%` }} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {participationRate}% participation rate - Network is {healthStatus}
+                  </p>
+                </>
+              );
+            })()}
           </div>
         </CardContent>
       </Card>
