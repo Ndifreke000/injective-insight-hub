@@ -25,9 +25,10 @@ export function RefreshButton({ onRefresh, label = "Refresh" }: RefreshButtonPro
       size="sm" 
       onClick={handleRefresh}
       disabled={isRefreshing}
+      className="gap-2 text-xs font-medium border-border/60 hover:bg-muted/50"
     >
-      <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-      {isRefreshing ? "Refreshing..." : label}
+      <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+      {isRefreshing ? "Syncing..." : label}
     </Button>
   );
 }
