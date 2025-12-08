@@ -139,7 +139,7 @@ export default function Markets() {
 
   if (error && spotMarkets.length === 0) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-6 pt-8">
         <h1 className="text-3xl font-bold">Exchange Markets</h1>
         <ErrorState message={error} onRetry={loadData} />
       </div>
@@ -147,13 +147,13 @@ export default function Markets() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 pt-8">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2">Exchange Markets</h1>
           <p className="text-muted-foreground">Comprehensive market overview and analytics</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <RefreshButton onRefresh={loadData} />
           <EnhancedExportButton data={{ spot: filteredSpotMarkets, perp: filteredPerpMarkets }} filename="markets-data" exportType="markets" />
         </div>

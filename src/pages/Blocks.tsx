@@ -153,7 +153,7 @@ export default function Blocks() {
 
   if (error && !latestBlock) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-6 pt-8">
         <h1 className="text-3xl font-bold">Block & Transaction Analysis</h1>
         <ErrorState message={error} onRetry={loadData} />
       </div>
@@ -165,13 +165,13 @@ export default function Blocks() {
   const displayMetrics = metrics || { blockHeight: 0, totalTransactions: 0, activeValidators: 100, tps: 0, avgBlockTime: 0.7, totalStaked: "0", openInterest: "0", insuranceFund: "0", spotVolume24h: "0", derivativesVolume24h: "0" };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 pt-8">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2">Block & Transaction Analysis</h1>
           <p className="text-muted-foreground">Real-time blockchain activity monitoring · <span className="font-semibold text-primary">Injective Network</span></p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <RefreshButton onRefresh={loadData} />
           <EnhancedExportButton data={{ latestBlock: displayBlock, metrics: displayMetrics, recentBlocks: blocks }} filename="blocks-data" exportType="blocks" />
         </div>

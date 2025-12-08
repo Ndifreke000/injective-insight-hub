@@ -9,7 +9,7 @@ export function AppHeader() {
   const isDocsPage = location.pathname === "/docs";
 
   return (
-    <header className="sticky top-0 z-20 h-16 flex items-center justify-between px-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-30 h-16 flex items-center justify-between px-6 border-b border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
       <div className="flex items-center gap-4">
         <SidebarTrigger />
         <div className="h-6 w-px bg-border" />

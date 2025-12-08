@@ -39,13 +39,13 @@ export default function Risk() {
   const riskBuffer = ((parseFloat(metrics.insuranceFund) / parseFloat(metrics.openInterest)) * 100);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 pt-8">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold mb-2">Risk & Safety Metrics</h1>
           <p className="text-muted-foreground">Protocol solvency and risk monitoring</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <RefreshButton onRefresh={loadData} />
           <EnhancedExportButton
             data={{ metrics, riskMetrics }}

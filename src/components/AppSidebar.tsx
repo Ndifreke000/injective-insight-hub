@@ -45,10 +45,10 @@ export function AppSidebar() {
 
   return (
     <Sidebar 
-      className={`${isCollapsed ? "w-16" : "w-60"} bg-sidebar-background border-r border-sidebar-border`} 
+      className={`${isCollapsed ? "w-16" : "w-60"} bg-sidebar-background border-r border-border`} 
       collapsible="icon"
     >
-      <SidebarHeader className="h-16 flex items-center justify-center px-3 border-b border-sidebar-border">
+      <SidebarHeader className="h-16 flex items-center justify-center px-4 border-b border-border">
         {!isCollapsed ? (
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
@@ -76,9 +76,9 @@ export function AppSidebar() {
             </Button>
           </div>
         ) : (
-          <div className="relative flex items-center justify-center w-full">
+          <div className="relative flex items-center justify-center w-full px-4">
             <img src="/injective-logo.png" alt="Injective" className="h-8 w-8 rounded-lg object-contain" />
-            <div className="absolute -bottom-0.5 right-1 status-online" />
+            <div className="absolute bottom-0 right-4 status-online" />
           </div>
         )}
       </SidebarHeader>

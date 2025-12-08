@@ -51,7 +51,7 @@ export default function Dashboard() {
 
   if (error && !metrics) {
     return (
-      <div className="space-y-8 p-6">
+      <div className="space-y-6 p-6 pt-8">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-1">Real-time blockchain intelligence</p>
@@ -70,14 +70,14 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-6 p-6 pt-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-1">Real-time blockchain intelligence</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <RefreshButton onRefresh={loadData} />
           <EnhancedExportButton
             data={exportData}

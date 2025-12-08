@@ -58,7 +58,7 @@ export default function Staking() {
 
   if (error && !metrics) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-6 pt-8">
         <h1 className="text-3xl font-bold">Staking</h1>
         <ErrorState message={error} onRetry={loadData} />
       </div>
@@ -83,13 +83,13 @@ export default function Staking() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 pt-8">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2">Staking</h1>
           <p className="text-muted-foreground">Network staking metrics and validator information</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <RefreshButton onRefresh={loadData} />
           <EnhancedExportButton
             data={exportData}
