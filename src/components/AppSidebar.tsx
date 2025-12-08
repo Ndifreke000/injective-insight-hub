@@ -48,15 +48,15 @@ export function AppSidebar() {
       className={`${isCollapsed ? "w-16" : "w-60"} bg-sidebar-background border-r border-sidebar-border`} 
       collapsible="icon"
     >
-      <SidebarHeader className="h-16 flex items-center px-4 border-b border-sidebar-border">
+      <SidebarHeader className="h-16 flex items-center justify-center px-3 border-b border-sidebar-border">
         {!isCollapsed ? (
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2.5">
-              <div className="relative">
-                <img src="/injective-logo.png" alt="Injective" className="h-7 w-7 rounded-md" />
+            <div className="flex items-center gap-3">
+              <div className="relative flex-shrink-0">
+                <img src="/injective-logo.png" alt="Injective" className="h-8 w-8 rounded-lg object-contain" />
                 <div className="absolute -bottom-0.5 -right-0.5 status-online" />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <span className="text-sm font-semibold text-sidebar-foreground leading-tight">Injective</span>
                 <span className="text-[9px] uppercase tracking-widest text-sidebar-muted">Intelligence</span>
               </div>
@@ -65,7 +65,7 @@ export function AppSidebar() {
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="h-8 w-8 text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-md"
+              className="h-8 w-8 flex-shrink-0 text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-md"
               title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
             >
               {theme === "light" ? (
@@ -76,9 +76,9 @@ export function AppSidebar() {
             </Button>
           </div>
         ) : (
-          <div className="relative mx-auto">
-            <img src="/injective-logo.png" alt="Injective" className="h-7 w-7 rounded-md" />
-            <div className="absolute -bottom-0.5 -right-0.5 status-online" />
+          <div className="relative flex items-center justify-center w-full">
+            <img src="/injective-logo.png" alt="Injective" className="h-8 w-8 rounded-lg object-contain" />
+            <div className="absolute -bottom-0.5 right-1 status-online" />
           </div>
         )}
       </SidebarHeader>
