@@ -31,7 +31,7 @@ const App = () => (
           <SidebarProvider>
             <div className="min-h-screen flex w-full">
               <AppSidebar />
-              <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 flex flex-col min-h-0 min-w-0">
                 <AppHeader />
                 <main className="flex-1 overflow-y-auto">
                   <Routes>
