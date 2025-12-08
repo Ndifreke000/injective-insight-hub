@@ -76,9 +76,9 @@ export function AppSidebar() {
             </Button>
           </div>
         ) : (
-          <div className="relative flex items-center justify-center w-full px-4">
+          <div className="relative flex items-center justify-center w-full px-3">
             <img src="/injective-logo.png" alt="Injective" className="h-8 w-8 rounded-lg object-contain" />
-            <div className="absolute bottom-0 right-4 status-online" />
+            <div className="absolute bottom-0 right-3 status-online" />
           </div>
         )}
       </SidebarHeader>
