@@ -41,13 +41,13 @@ export default function Heatmap() {
   const overallRisk = avgScore > 70 ? "low" : avgScore > 40 ? "medium" : "high";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 pt-8">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold mb-2">Market Risk Heatmap</h1>
           <p className="text-muted-foreground">Systemic risk aggregation and monitoring</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <RefreshButton onRefresh={loadData} />
           <EnhancedExportButton
             data={filteredMetrics}

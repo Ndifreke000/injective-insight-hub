@@ -36,13 +36,13 @@ export default function Orderbook() {
 
   if (filteredOrderbooks.length === 0 && orderbooks.length > 0) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-6 pt-8">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold mb-2">Orderbook & Liquidity</h1>
             <p className="text-muted-foreground">Real-time market depth and liquidity analysis</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <RefreshButton onRefresh={loadData} />
             <EnhancedExportButton
               data={orderbooks}
@@ -70,13 +70,13 @@ export default function Orderbook() {
   const currentBook = filteredOrderbooks[selectedMarket] || filteredOrderbooks[0];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 pt-8">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold mb-2">Orderbook & Liquidity</h1>
           <p className="text-muted-foreground">Real-time market depth and liquidity analysis</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <RefreshButton onRefresh={loadData} />
           <EnhancedExportButton
             data={filteredOrderbooks}

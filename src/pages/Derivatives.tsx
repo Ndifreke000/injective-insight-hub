@@ -98,7 +98,7 @@ export default function Derivatives() {
 
   if (error && derivatives.length === 0) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-6 pt-8">
         <h1 className="text-3xl font-bold">Derivatives Markets</h1>
         <ErrorState message={error} onRetry={loadData} />
       </div>
@@ -106,13 +106,13 @@ export default function Derivatives() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 pt-8">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2">Derivatives Markets</h1>
           <p className="text-muted-foreground">Perpetual futures and derivatives analytics</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <RefreshButton onRefresh={loadData} />
           <EnhancedExportButton data={derivatives} filename="derivatives-data" exportType="derivatives" />
         </div>

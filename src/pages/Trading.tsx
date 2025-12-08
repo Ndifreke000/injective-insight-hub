@@ -32,13 +32,13 @@ export default function Trading() {
   const derivPercentage = (parseFloat(metrics.derivativesVolume24h) / totalVolume) * 100;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 pt-8">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold mb-2">Trading Activity</h1>
           <p className="text-muted-foreground">24-hour trading metrics and market activity</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <RefreshButton onRefresh={loadData} />
           <EnhancedExportButton
             data={metrics}
