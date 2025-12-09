@@ -1,3 +1,4 @@
+import React from "react";
 import {
   LayoutDashboard,
   Box,
@@ -45,10 +46,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar 
-      className={`${isCollapsed ? "w-[52px]" : "w-60"} bg-sidebar-background border-r border-border`} 
+      className="bg-sidebar-background"
+      style={{
+        "--sidebar-width": "15rem",
+        "--sidebar-width-icon": "3.5rem",
+      } as React.CSSProperties}
       collapsible="icon"
     >
-      <SidebarHeader className="h-16 flex items-center justify-center px-3 border-b border-border -mr-px">
+      <SidebarHeader className="h-16 flex items-center justify-center px-3 border-b border-border">
         {!isCollapsed ? (
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
@@ -83,7 +88,7 @@ export function AppSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent className={`${isCollapsed ? "px-1.5" : "px-2"} py-3`}>
+      <SidebarContent className={`${isCollapsed ? "px-2" : "px-2"} py-3`}>
         <SidebarGroup>
           {!isCollapsed && (
             <span className="px-3 mb-2 text-[10px] font-medium uppercase tracking-widest text-sidebar-muted">
