@@ -48,7 +48,7 @@ export function AppSidebar() {
       className={`${isCollapsed ? "w-[52px]" : "w-60"} bg-sidebar-background border-r border-border`} 
       collapsible="icon"
     >
-      <SidebarHeader className="h-16 flex items-center justify-center px-3 border-b border-border">
+      <SidebarHeader className="h-16 flex items-center justify-center px-3 border-b border-border -mr-px">
         {!isCollapsed ? (
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
@@ -83,7 +83,7 @@ export function AppSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-3">
+      <SidebarContent className={`${isCollapsed ? "px-1.5" : "px-2"} py-3`}>
         <SidebarGroup>
           {!isCollapsed && (
             <span className="px-3 mb-2 text-[10px] font-medium uppercase tracking-widest text-sidebar-muted">
